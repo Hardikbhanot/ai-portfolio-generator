@@ -50,8 +50,8 @@ To get a local copy up and running, follow these simple steps.
 
 1.  **Clone the repository**
     ```sh
-    git clone [https://github.com/your-username/your-repository-name.git](https://github.com/your-username/your-repository-name.git)
-    cd your-repository-name
+    git clone https://github.com/Hardikbhanot/ai-portfolio-generator.git
+    cd ai-portfolio-generator
     ```
 
 2.  **Backend Setup**
