@@ -1,0 +1,19 @@
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Java / Spring Boot (target folder, logs)
+/target/
+*.log
+.mvn/
+
+# Node.js / React (dependencies, build output, env files)
+/node_modules/
+/build/
+.env
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
