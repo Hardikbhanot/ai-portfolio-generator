@@ -2,8 +2,8 @@ package com.lopsie.portfolio.controller;
 
 import com.lopsie.portfolio.dto.GenerationResponse;
 import com.lopsie.portfolio.entity.User;
-import com.lopsie.portfolio.repository.UserRepository;
 import com.lopsie.portfolio.service.PortfolioGenerationService;
+import com.lopsie.portfolio.service.UserService; // Import UserService
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/portfolios") // Correct base path for the portfolio resource
+@RequestMapping("/api/portfolios")
 @CrossOrigin(origins = "http://localhost:3000")
 public class PortfolioController {
 
     private final PortfolioGenerationService portfolioGenerationService;
-    private final UserRepository userRepository;
+    private final UserService userService; // Use UserService instead of UserRepository
 
-    public PortfolioController(PortfolioGenerationService portfolioGenerationService, UserRepository userRepository) {
+    public PortfolioController(PortfolioGenerationService portfolioGenerationService, UserService userService) {
         this.portfolioGenerationService = portfolioGenerationService;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     /**
-     * This is the main endpoint for generating a portfolio.
+     * The main endpoint for generating a portfolio from an uploaded resume.
      * It requires the user to be authenticated.
      *
      * @param file The resume file (.pdf or .docx) uploaded by the user.
@@ -38,27 +38,26 @@ public class PortfolioController {
             @RequestParam("templateId") String templateId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        try {
-            // Find the full User entity from the username (email)
-            User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Authenticated user not found in the database."));
+        // The try-catch block is no longer needed here.
+        // Exceptions will be handled globally by the GlobalExceptionHandler.
 
-            // Delegate all the complex logic to the service
-            String generatedHtml = portfolioGenerationService.generateAndSavePortfolio(file, templateId, currentUser);
+        // 1. Find the User entity using the UserService
+        User currentUser = userService.findByEmail(userDetails.getUsername());
 
-            // Return a successful response with the HTML content
-            return ResponseEntity.ok(GenerationResponse.success(generatedHtml));
+        // 2. Delegate the complex logic to the generation service
+        String generatedHtml = portfolioGenerationService.generateAndSavePortfolio(file, templateId, currentUser);
 
-        } catch (Exception e) {
-            // Return a user-friendly error message if something goes wrong
-            return ResponseEntity.badRequest().body(GenerationResponse.failure(e.getMessage()));
-        }
+        // 3. Return a successful response
+        return ResponseEntity.ok(GenerationResponse.success(generatedHtml));
     }
 
-
+    /**
+     * Fetches all saved portfolios for the currently authenticated user.
+     * (Functionality to be implemented in the service layer).
+     */
     @GetMapping
     public ResponseEntity<?> getUserPortfolios(@AuthenticationPrincipal UserDetails userDetails) {
-        // TODO: Implement logic in your service to find all portfolios by user
+        // TODO: Implement logic in PortfolioGenerationService to find portfolios by user
         return ResponseEntity.ok("Endpoint to get all portfolios for user: " + userDetails.getUsername());
     }
 }

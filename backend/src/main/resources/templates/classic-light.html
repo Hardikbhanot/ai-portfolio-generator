@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Generated Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; color: #212529; font-family: 'Source Sans 3', sans-serif; }
+        .section-title { border-bottom: 2px solid #0d6efd; font-family: 'Lora', serif; }
+        .skill-badge { background-color: #e9ecef; color: #0d6efd; border: 1px solid #dee2e6; transition: all 0.2s ease-in-out; }
+        .skill-badge:hover { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+        .project-card { background-color: #ffffff; border: 1px solid #e9ecef; transition: transform 0.2s, box-shadow 0.2s; }
+        .project-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px -4px rgba(0,0,0,0.1); }
+        .download-btn { position: fixed; bottom: 2rem; right: 2rem; background-color: #0d6efd; color: white; padding: 0.75rem 1.25rem; border-radius: 9999px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+        .download-btn:hover { background-color: #0b5ed7; }
+    </style>
+</head>
+<body class="p-8 md:p-12 lg:p-16">
+<div class="max-w-4xl mx-auto">
+    <section class="mb-16">
+        <h1 class="text-5xl font-bold mb-6 pb-3 section-title text-gray-800">Professional Summary</h1>
+        <p class="text-lg leading-relaxed text-gray-600" th:text="${portfolio.bio}">Bio placeholder.</p>
+    </section>
+
+    <section class="mb-16">
+        <h2 class="text-4xl font-bold mb-6 pb-3 section-title text-gray-800">Core Competencies</h2>
+        <div class="flex flex-wrap gap-3">
+            <span th:each="skill : ${portfolio.skills}" th:text="${skill}" class="skill-badge px-4 py-2 rounded-full font-semibold text-sm cursor-default">Skill placeholder</span>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="text-4xl font-bold mb-6 pb-3 section-title text-gray-800">Featured Projects</h2>
+        <div class="grid gap-8 grid-cols-1 md:grid-cols-2">
+            <div th:each="project : ${portfolio.projects}" class="project-card p-6 rounded-lg">
+                <h3 class="font-bold text-xl text-gray-800 mb-2" th:text="${project.name}">Project placeholder</h3>
+                <p class="text-gray-600 text-base" th:text="${project.description}">Description placeholder.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<button id="downloadBtn" class="download-btn">Download HTML</button>
+
+<script>
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        this.style.display = 'none';
+        const htmlContent = document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'portfolio.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.style.display = 'block';
+    });
+</script>
+</body>
+</html>
+
+

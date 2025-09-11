@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Generated Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #f4f4f5; color: #27272a; font-family: 'Poppins', sans-serif; }
+        .gradient-text { background-image: linear-gradient(to right, #ec4899, #8b5cf6); -webkit-background-clip: text; color: transparent; }
+        .section-title { border-bottom: 3px solid #d946ef; }
+        .skill-badge { background-color: #ffffff; color: #52525b; border: 1px solid #e4e4e7; transition: all 0.2s ease-in-out; }
+        .skill-badge:hover { color: #ec4899; border-color: #ec4899; box-shadow: 0 0 10px rgba(236, 72, 153, 0.2); transform: scale(1.05); }
+        .project-card { background-color: #ffffff; border: 1px solid #e4e4e7; border-bottom: 4px solid transparent; transition: all 0.3s ease; }
+        .project-card:hover { border-bottom-color: #8b5cf6; transform: translateY(-5px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.08); }
+        .download-btn { position: fixed; bottom: 2rem; right: 2rem; background-image: linear-gradient(to right, #ec4899, #8b5cf6); color: white; padding: 0.75rem 1.25rem; border-radius: 9999px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .download-btn:hover { transform: scale(1.05); box-shadow: 0 15px 25px -5px rgba(139, 92, 246, 0.4); }
+    </style>
+</head>
+<body class="p-8 md:p-12 lg:p-16">
+<div class="max-w-4xl mx-auto">
+    <section class="mb-16">
+        <h1 class="text-5xl font-extrabold mb-6 pb-3 section-title gradient-text">My Story</h1>
+        <p class="text-lg leading-relaxed text-zinc-600" th:text="${portfolio.bio}">Bio placeholder.</p>
+    </section>
+
+    <section class="mb-16">
+        <h2 class="text-4xl font-bold mb-6 pb-3 section-title text-zinc-800">My Toolbox</h2>
+        <div class="flex flex-wrap gap-3">
+            <span th:each="skill : ${portfolio.skills}" th:text="${skill}" class="skill-badge px-4 py-2 rounded-lg font-semibold text-sm cursor-default">Skill placeholder</span>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="text-4xl font-bold mb-6 pb-3 section-title text-zinc-800">Creative Work</h2>
+        <div class="grid gap-8 grid-cols-1 md:grid-cols-2">
+            <div th:each="project : ${portfolio.projects}" class="project-card p-6 rounded-xl">
+                <h3 class="font-bold text-xl text-zinc-800 mb-2" th:text="${project.name}">Project placeholder</h3>
+                <p class="text-zinc-600 text-base" th:text="${project.description}">Description placeholder.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<button id="downloadBtn" class="download-btn">Download HTML</button>
+
+<script>
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        this.style.display = 'none';
+        const htmlContent = document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'portfolio.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.style.display = 'block';
+    });
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ package com.lopsie.portfolio.config;
 import com.lopsie.portfolio.filter.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -21,9 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider; // <-- Inject the provider directly
+    private final AuthenticationProvider authenticationProvider;
 
-    // THIS CONSTRUCTOR WAS THE SOURCE OF THE CYCLE. IT IS NOW FIXED.
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
@@ -34,18 +34,19 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Allow the browser's preflight OPTIONS requests to pass through security
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Allow public access to auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Secure all other endpoints
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Use the injected AuthenticationProvider
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
-    // NOTE: The beans below are now separate and don't cause a cycle with the main config class.
 
     @Bean
     public static AuthenticationProvider authenticationProvider(

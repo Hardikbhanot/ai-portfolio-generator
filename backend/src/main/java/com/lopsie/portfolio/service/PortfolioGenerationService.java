@@ -1,25 +1,31 @@
 package com.lopsie.portfolio.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lopsie.portfolio.entity.Portfolio;
 import com.lopsie.portfolio.entity.User;
 import com.lopsie.portfolio.repository.PortfolioRepository;
+import com.lopsie.portfolio.service.PortfolioGenerationService.AIParsingException;
+import com.lopsie.portfolio.service.PortfolioGenerationService.ResumeParsingException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 
 @Service
 public class PortfolioGenerationService {
+
+    private static final Logger log = LoggerFactory.getLogger(PortfolioGenerationService.class);
 
     private final AIService aiService;
     private final PortfolioRepository portfolioRepository;
@@ -33,103 +39,141 @@ public class PortfolioGenerationService {
     }
 
     /**
-     * The main public method that orchestrates the entire portfolio generation and saving process.
+     * Orchestrates the entire process of generating a portfolio from a resume,
+     * saving it, and rendering it as HTML using a specific template.
      */
-    public String generateAndSavePortfolio(MultipartFile file, String templateId, User user) throws Exception {
-        // 1. Parse the uploaded file to get the raw text
-        String resumeText = parseResumeFile(file);
+    public String generateAndSavePortfolio(MultipartFile file, String templateId, User user) {
+        try {
+            String resumeText = parseResumeFile(file);
+            if (resumeText.isBlank()) {
+                throw new ResumeParsingException("Resume content is empty or could not be read.");
+            }
 
-        // 2. Create a detailed prompt and get the structured data from the AI service
+            Map<String, Object> portfolioData = getAIPortfolioData(resumeText);
+            savePortfolio(portfolioData, user);
+            return renderPortfolioHtml(portfolioData, templateId);
+
+        } catch (ResumeParsingException | AIParsingException e) {
+            log.error("Validation error during portfolio generation for user {}: {}", user.getEmail(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("An unexpected error occurred during portfolio generation for user {}", user.getEmail(), e);
+            throw new RuntimeException("An unexpected error occurred. Please try again later.", e);
+        }
+    }
+
+    private String parseResumeFile(MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename == null || file.isEmpty()) {
+            throw new ResumeParsingException("Invalid or empty file provided.");
+        }
+
+        try (InputStream inputStream = file.getInputStream()) {
+            if (filename.toLowerCase().endsWith(".pdf")) {
+                try (PDDocument document = PDDocument.load(inputStream)) {
+                    return new PDFTextStripper().getText(document);
+                }
+            } else if (filename.toLowerCase().endsWith(".docx")) {
+                try (XWPFDocument doc = new XWPFDocument(inputStream)) {
+                    StringBuilder text = new StringBuilder();
+                    doc.getParagraphs().forEach(p -> text.append(p.getText()).append("\n"));
+                    return text.toString();
+                }
+            } else {
+                throw new ResumeParsingException("Unsupported file type. Please upload a PDF or DOCX.");
+            }
+        } catch (Exception e) {
+            throw new ResumeParsingException("Failed to parse resume file: " + filename, e);
+        }
+    }
+
+    private Map<String, Object> getAIPortfolioData(String resumeText) {
         String prompt = getPortfolioPrompt(resumeText);
         String rawJsonResponse = aiService.generatePortfolioContent(prompt);
         String cleanedJsonResponse = cleanJsonResponse(rawJsonResponse);
-        Map<String, Object> portfolioData = parseJsonResponse(cleanedJsonResponse);
 
-        // 3. Create and save a new Portfolio entity to the database
-        savePortfolio(portfolioData, user);
+        try {
+            return objectMapper.readValue(cleanedJsonResponse, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse JSON response from AI: {}", cleanedJsonResponse, e);
+            throw new AIParsingException("The AI response was not in a valid format.", e);
+        }
+    }
 
-        // 4. Use Thymeleaf to generate the final HTML based on the chosen template
+    private void savePortfolio(Map<String, Object> portfolioData, User user) {
+        try {
+            Portfolio portfolio = new Portfolio();
+            portfolio.setUser(user);
+            portfolio.setBio((String) portfolioData.getOrDefault("bio", ""));
+            portfolio.setSkills(objectMapper.writeValueAsString(portfolioData.getOrDefault("skills", Collections.emptyList())));
+            portfolio.setProjects(objectMapper.writeValueAsString(portfolioData.getOrDefault("projects", Collections.emptyList())));
+            portfolioRepository.save(portfolio);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize portfolio data for database persistence.", e);
+            throw new RuntimeException("Error preparing portfolio data for saving.", e);
+        }
+    }
+
+    private String renderPortfolioHtml(Map<String, Object> portfolioData, String templateId) {
         Context context = new Context();
-        context.setVariable("portfolio", portfolioData); // Pass the map directly to Thymeleaf
-        String templateName = getTemplateNameById(templateId); // Helper to map ID to filename
-
+        context.setVariable("portfolio", portfolioData);
+        String templateName = getTemplateNameById(templateId);
         return templateEngine.process(templateName, context);
     }
 
-    // --- Private Helper Methods (moved from the old controller) ---
+    // --- Unchanged Private Helper Methods ---
 
-    private String parseResumeFile(MultipartFile file) throws Exception {
-        try (InputStream inputStream = file.getInputStream()) {
-            String filename = file.getOriginalFilename();
-            if (filename == null) throw new IllegalArgumentException("Invalid file.");
-
-            if (filename.toLowerCase().endsWith(".pdf")) {
-                PDDocument document = PDDocument.load(inputStream);
-                PDFTextStripper stripper = new PDFTextStripper();
-                String text = stripper.getText(document);
-                document.close();
-                return text;
-            } else if (filename.toLowerCase().endsWith(".docx")) {
-                XWPFDocument doc = new XWPFDocument(inputStream);
-                // This logic for DOCX parsing is more robust
-                StringBuilder text = new StringBuilder();
-                doc.getParagraphs().forEach(p -> text.append(p.getText()).append("\n"));
-                doc.close();
-                return text.toString();
-            } else {
-                throw new IllegalArgumentException("Unsupported file type! Only PDF or DOCX allowed.");
-            }
+        private String getPortfolioPrompt(String resumeText) {
+            // This updated prompt is more aggressive about the required format.
+            return "Analyze the following resume text. Your task is to extract key information and return it as a single, valid JSON object. " +
+                    "Your response MUST start with `{` and end with `}`. " +
+                    "DO NOT include any introductory text, explanations, apologies, or markdown code fences like ```json. " +
+                    "ONLY the raw JSON object is allowed. " +
+                    "For example, a bad response is: 'Here is the JSON you requested: ```json{\"bio\":...}```'. " +
+                    "A good response is: '{\"bio\":...}'.\n" +
+                    "The JSON object must have this exact structure: " +
+                    "{\"bio\": \"[A short, professional bio]\", \"skills\": [\"skill1\", \"skill2\"], \"projects\": [{\"name\": \"Project Name\", \"description\": \"Project description\"}]}.\n" +
+                    "If a section is not found, return an empty string for \"bio\" or empty arrays for \"skills\" and \"projects\".\n" +
+                    "Here is the resume content:\n" +
+                    "\"\"\"\n" +
+                    resumeText + "\n" +
+                    "\"\"\"\n";
         }
-    }
 
-    private void savePortfolio(Map<String, Object> portfolioData, User user) throws JsonProcessingException {
-        Portfolio portfolio = new Portfolio();
-        portfolio.setUser(user);
-        portfolio.setBio((String) portfolioData.getOrDefault("bio", ""));
-
-        // Convert skills and projects lists to JSON strings for database storage
-        portfolio.setSkills(objectMapper.writeValueAsString(portfolioData.getOrDefault("skills", new ArrayList<>())));
-        portfolio.setProjects(objectMapper.writeValueAsString(portfolioData.getOrDefault("projects", new ArrayList<>())));
-
-        portfolioRepository.save(portfolio);
-    }
-
-    private String getPortfolioPrompt(String resumeText) {
-        // This is your well-defined prompt, no changes needed here.
-        return "You are a professional portfolio generator... [Your full prompt here]";
-    }
 
     private String cleanJsonResponse(String rawResponse) {
-        // Your existing cleanup logic
-        if (rawResponse == null) return "{}";
-        String cleaned = rawResponse.trim().replace("```json", "").replace("```", "");
-        return cleaned.trim();
-    }
-
-    private Map<String, Object> parseJsonResponse(String jsonString) throws Exception {
-        // Your existing parsing logic
-        try {
-            return objectMapper.readValue(jsonString, Map.class);
-        } catch (Exception e) {
-            System.err.println("Failed to parse AI response, returning default structure. Error: " + e.getMessage());
-            Map<String, Object> defaultPortfolio = new HashMap<>();
-            defaultPortfolio.put("bio", "Could not generate a bio. Please check the resume content.");
-            defaultPortfolio.put("skills", new ArrayList<String>());
-            defaultPortfolio.put("projects", new ArrayList<Map<String, String>>());
-            return defaultPortfolio;
-        }
+        if (rawResponse == null || rawResponse.isBlank()) return "{}";
+        return rawResponse.trim().replace("```json", "").replace("```", "");
     }
 
     private String getTemplateNameById(String templateId) {
-        // Maps the template ID from the frontend to the actual Thymeleaf HTML filename
-        switch (templateId) {
-            case "classic-light":
-                return "classic-light";
-            case "creative-vibrant":
-                return "creative-vibrant";
-            case "modern-dark":
-            default:
-                return "modern-dark";
+        return switch (templateId) {
+            case "classic-light" -> "classic-light";
+            case "creative-vibrant" -> "creative-vibrant";
+            default -> "modern-dark";
+        };
+    }
+
+    // --- NESTED EXCEPTION CLASSES ---
+
+    /**
+     * Custom exception for errors occurring during resume file parsing.
+     */
+    public static class ResumeParsingException extends RuntimeException {
+        public ResumeParsingException(String message) {
+            super(message);
+        }
+        public ResumeParsingException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Custom exception for errors occurring during AI response parsing.
+     */
+    public static class AIParsingException extends RuntimeException {
+        public AIParsingException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

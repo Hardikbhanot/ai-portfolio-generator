@@ -42,4 +42,9 @@ public class UserService implements UserDetailsService { // <-- IMPLEMENT UserDe
 
         return userRepository.save(user);
     }
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    }
 }
