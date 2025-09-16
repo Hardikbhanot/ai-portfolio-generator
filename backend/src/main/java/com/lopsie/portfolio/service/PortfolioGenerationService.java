@@ -42,26 +42,45 @@ public class PortfolioGenerationService {
      * Orchestrates the entire process of generating a portfolio from a resume,
      * saving it, and rendering it as HTML using a specific template.
      */
-    public String generateAndSavePortfolio(MultipartFile file, String templateId, User user) {
+//    public String generateAndSavePortfolio(MultipartFile file, String templateId, User user) {
+//        try {
+//            String resumeText = parseResumeFile(file);
+//            if (resumeText.isBlank()) {
+//                throw new ResumeParsingException("Resume content is empty or could not be read.");
+//            }
+//
+//            Map<String, Object> portfolioData = getAIPortfolioData(resumeText);
+//            savePortfolio(portfolioData, user);
+//            return renderPortfolioHtml(portfolioData, templateId);
+//
+//        } catch (ResumeParsingException | AIParsingException e) {
+//            log.error("Validation error during portfolio generation for user {}: {}", user.getEmail(), e.getMessage());
+//            throw e;
+//        } catch (Exception e) {
+//            log.error("An unexpected error occurred during portfolio generation for user {}", user.getEmail(), e);
+//            throw new RuntimeException("An unexpected error occurred. Please try again later.", e);
+//        }
+//    }
+
+
+    /**
+     * Generates a structured MAP of portfolio data from a resume.
+     * This map will be sent as a JSON object to the frontend GrapesJS editor.
+     *
+     * @param file The resume file uploaded by the user.
+     * @param user The authenticated user.
+     * @return A Map representing the structured portfolio data.
+     */
+    public Map<String, Object> generatePortfolioData(MultipartFile file, User user) {
         try {
-            String resumeText = parseResumeFile(file);
-            if (resumeText.isBlank()) {
-                throw new ResumeParsingException("Resume content is empty or could not be read.");
-            }
-
-            Map<String, Object> portfolioData = getAIPortfolioData(resumeText);
-            savePortfolio(portfolioData, user);
-            return renderPortfolioHtml(portfolioData, templateId);
-
-        } catch (ResumeParsingException | AIParsingException e) {
-            log.error("Validation error during portfolio generation for user {}: {}", user.getEmail(), e.getMessage());
-            throw e;
+            String resumeText = parseResumeFile(file); // Your existing file parsing logic
+            return getAIPortfolioData(resumeText);
         } catch (Exception e) {
-            log.error("An unexpected error occurred during portfolio generation for user {}", user.getEmail(), e);
-            throw new RuntimeException("An unexpected error occurred. Please try again later.", e);
+            log.error("Failed to generate portfolio data for user {}", user.getEmail(), e);
+            // Re-throw to be caught by your GlobalExceptionHandler
+            throw new RuntimeException("Failed to generate portfolio data.", e);
         }
     }
-
     private String parseResumeFile(MultipartFile file) {
         String filename = file.getOriginalFilename();
         if (filename == null || file.isEmpty()) {
@@ -88,38 +107,39 @@ public class PortfolioGenerationService {
     }
 
     private Map<String, Object> getAIPortfolioData(String resumeText) {
-        String prompt = getPortfolioPrompt(resumeText);
+        String prompt = getPortfolioPrompt(resumeText); // Your existing prompt logic
         String rawJsonResponse = aiService.generatePortfolioContent(prompt);
-        String cleanedJsonResponse = cleanJsonResponse(rawJsonResponse);
+        String cleanedJsonResponse = cleanJsonResponse(rawJsonResponse); // Your existing cleaning logic
 
         try {
+            // Use TypeReference to correctly parse the JSON into a Map
             return objectMapper.readValue(cleanedJsonResponse, new TypeReference<>() {});
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse JSON response from AI: {}", cleanedJsonResponse, e);
+        } catch (Exception e) {
+            log.error("Failed to parse JSON from AI response: {}", cleanedJsonResponse, e);
             throw new AIParsingException("The AI response was not in a valid format.", e);
         }
     }
-
-    private void savePortfolio(Map<String, Object> portfolioData, User user) {
-        try {
-            Portfolio portfolio = new Portfolio();
-            portfolio.setUser(user);
-            portfolio.setBio((String) portfolioData.getOrDefault("bio", ""));
-            portfolio.setSkills(objectMapper.writeValueAsString(portfolioData.getOrDefault("skills", Collections.emptyList())));
-            portfolio.setProjects(objectMapper.writeValueAsString(portfolioData.getOrDefault("projects", Collections.emptyList())));
-            portfolioRepository.save(portfolio);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize portfolio data for database persistence.", e);
-            throw new RuntimeException("Error preparing portfolio data for saving.", e);
-        }
-    }
-
-    private String renderPortfolioHtml(Map<String, Object> portfolioData, String templateId) {
-        Context context = new Context();
-        context.setVariable("portfolio", portfolioData);
-        String templateName = getTemplateNameById(templateId);
-        return templateEngine.process(templateName, context);
-    }
+//
+//    private void savePortfolio(Map<String, Object> portfolioData, User user) {
+//        try {
+//            Portfolio portfolio = new Portfolio();
+//            portfolio.setUser(user);
+//            portfolio.setBio((String) portfolioData.getOrDefault("bio", ""));
+//            portfolio.setSkills(objectMapper.writeValueAsString(portfolioData.getOrDefault("skills", Collections.emptyList())));
+//            portfolio.setProjects(objectMapper.writeValueAsString(portfolioData.getOrDefault("projects", Collections.emptyList())));
+//            portfolioRepository.save(portfolio);
+//        } catch (JsonProcessingException e) {
+//            log.error("Failed to serialize portfolio data for database persistence.", e);
+//            throw new RuntimeException("Error preparing portfolio data for saving.", e);
+//        }
+//    }
+//
+//    private String renderPortfolioHtml(Map<String, Object> portfolioData, String templateId) {
+//        Context context = new Context();
+//        context.setVariable("portfolio", portfolioData);
+//        String templateName = getTemplateNameById(templateId);
+//        return templateEngine.process(templateName, context);
+//    }
 
     // --- Unchanged Private Helper Methods ---
 

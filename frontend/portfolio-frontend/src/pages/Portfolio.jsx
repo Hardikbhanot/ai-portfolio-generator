@@ -1,14 +1,36 @@
-import React, { useState } from "react";
+import React, {useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiClient from '../api/axiosConfig';
-import { AnimatePresence, motion } from "framer-motion";
-import { Code as CodeIcon, CloudUpload as CloudUploadIcon, X as XIcon, ArrowRight as ArrowRightIcon, Loader2 } from "lucide-react";
-import { templates } from "../templates"; 
-import TemplateCard from "../components/TemplateCard";
+import { motion, AnimatePresence } from "framer-motion";
+import { Code as CodeIcon, CloudUpload as CloudUploadIcon, ArrowRight as ArrowRightIcon, Loader2, X as XIcon } from "lucide-react";
 import Notification from "../components/Notification";
+import TemplateCard from "../components/TemplateCard";
+
+// --- Template data is now defined directly in this file ---
+const templates = [
+  {
+    id: 'modern-dark',
+    name: 'Modern Dark',
+    description: 'A sleek, professional theme for tech roles.',
+    thumbnail: '/images/template-modern-dark.png',
+  },
+  {
+    id: 'classic-light',
+    name: 'Classic Light',
+    description: 'A clean and elegant design for any profession.',
+    thumbnail: '/images/template-classic-light.png',
+  },
+  {
+    id: 'creative-vibrant',
+    name: 'Creative Vibrant',
+    description: 'A colorful and bold layout for creative artists.',
+    thumbnail: '/images/template-creative-vibrant.png',
+  },
+];
 
 // --- Reusable Components ---
 const PrimaryButton = ({ children, ...props }) => (
-    <button {...props} className="relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-medium text-white transition-all duration-3C00 bg-indigo-600 rounded-lg group disabled:bg-indigo-400 disabled:cursor-not-allowed hover:bg-white hover:text-indigo-600">
+    <button {...props} className="relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-medium text-white transition-all duration-300 bg-indigo-600 rounded-lg group disabled:bg-indigo-400 disabled:cursor-not-allowed hover:bg-white hover:text-indigo-600">
         <span className="absolute inset-0 w-0 h-0 transition-all duration-300 ease-out bg-white rounded-lg group-hover:w-full group-hover:h-full opacity-10"></span>
         <span className="relative flex items-center gap-2">{children}</span>
     </button>
@@ -32,12 +54,13 @@ const TemplatePreviewModal = ({ template, onClose }) => {
 
 // --- Main Page Component ---
 function PortfolioViewPage() {
-    const [step, setStep] = useState('upload'); 
+    const [step, setStep] = useState('upload');
     const [file, setFile] = useState(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
     const [previewTemplate, setPreviewTemplate] = useState(null);
     const [notification, setNotification] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const navigate = useNavigate();
 
     const handleFileChange = (e) => setFile(e.target.files[0]);
 
@@ -51,51 +74,35 @@ function PortfolioViewPage() {
 
     const handleGeneratePortfolio = async () => {
         if (!file || !selectedTemplateId) return;
-        setIsGenerating(true); // Start loading animation
+        setIsGenerating(true);
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("templateId", selectedTemplateId);
 
         try {
-            const response = await apiClient.post("/api/portfolios/generate", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+            const response = await apiClient.post("/api/portfolios/generate", formData);
+            // Navigate to the editor, passing BOTH the data and the chosen templateId
+            navigate('/editor', { 
+                state: { 
+                    portfolioData: response.data,
+                    templateId: selectedTemplateId 
+                } 
             });
-
-            if (response.data.success) {
-                const { htmlContent } = response.data;
-                // Open the generated HTML in a new browser tab
-                const newTab = window.open();
-                newTab.document.write(htmlContent);
-                newTab.document.close();
-                
-                // Reset the UI for the next generation
-                setStep('upload');
-                setFile(null);
-                setSelectedTemplateId(null);
-            } else {
-                setNotification({ type: 'error', message: response.data.message || "Failed to generate portfolio." });
-            }
         } catch (error) {
-            console.error("Error generating portfolio:", error);
-            if (error.response && (error.response.status === 403 || error.response.status === 401)) {
-                setNotification({ type: 'error', message: "Authentication Error: Please log out and log in again." });
-            } else {
-                setNotification({ type: 'error', message: "An error occurred while generating the portfolio. Please try again." });
-            }
+            console.error("Error generating portfolio data:", error);
+            setNotification({ type: 'error', message: "An error occurred while generating portfolio data." });
         } finally {
-            setIsGenerating(false); // Stop loading animation
+            setIsGenerating(false);
         }
     };
-    
-    // This function now only handles the upload and select steps
+
     const renderContent = () => {
         switch (step) {
             case 'upload':
                 return (
-                    <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-col items-center gap-4 p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
-                        <h2 className="text-2xl font-bold">Step 1: Upload Your Resume</h2>
-                        <p className="text-gray-600 dark:text-gray-400">Let our AI parse your skills, projects, and experience.</p>
-                        <label className="flex items-center justify-center w-full max-w-md px-4 py-3 text-sm font-semibold text-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">Step 1: Upload Your Resume</h1>
+                        <p className="text-gray-600 dark:text-gray-400">Let our AI create the foundation of your new portfolio.</p>
+                        <label className="flex items-center justify-center w-full max-w-md mx-auto px-4 py-3 text-sm font-semibold text-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-gray-300 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
                             <CloudUploadIcon className="w-5 h-5 mr-2" />
                             {file ? file.name : "Choose a PDF or DOCX file"}
                             <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" className="hidden" />
@@ -105,13 +112,12 @@ function PortfolioViewPage() {
                         </PrimaryButton>
                     </motion.div>
                 );
-
             case 'selectTemplate':
-                 return (
-                    <motion.div key="select" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                return (
+                     <motion.div key="select" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                         <div className="text-center">
-                            <h2 className="text-2xl font-bold">Step 2: Choose a Template</h2>
-                            <p className="text-gray-600 dark:text-gray-400">Select a layout that best fits your style.</p>
+                            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">Step 2: Choose a Theme</h2>
+                            <p className="mt-2 text-gray-600 dark:text-gray-400">Select a visual style for your portfolio.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {templates.map(template => (
@@ -121,34 +127,28 @@ function PortfolioViewPage() {
                         <div className="flex justify-center">
                             <PrimaryButton onClick={handleGeneratePortfolio} disabled={isGenerating || !selectedTemplateId}>
                                 {isGenerating ? <Loader2 className="animate-spin" /> : <CodeIcon className="w-5 h-5" />}
-                                {isGenerating ? "Generating..." : "Generate Portfolio"}
+                                {isGenerating ? "Generating..." : "Generate & Edit"}
                             </PrimaryButton>
                         </div>
                     </motion.div>
                 );
-            default:
-                return <div>Something went wrong.</div>;
+            default: return null;
         }
     };
 
     return (
         <>
             <Notification notification={notification} setNotification={setNotification} />
-            <div className="min-h-screen p-8 pt-24 text-gray-800 bg-gray-100 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300">
-                <div className="max-w-4xl mx-auto bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-8">
-                    <h1 className="text-3xl lg:text-4xl font-extrabold text-center mb-2 text-gray-900 dark:text-gray-100">
-                        My AI-Powered Portfolio
-                    </h1>
+            <div className="min-h-screen flex items-center justify-center p-8 pt-24 bg-gray-100 dark:bg-gray-900">
+                 <div className="w-full max-w-4xl p-8 bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl">
                     <AnimatePresence mode="wait">
                         {renderContent()}
                     </AnimatePresence>
                 </div>
-                
-                <TemplatePreviewModal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />
             </div>
+            <TemplatePreviewModal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />
         </>
     );
 }
 
 export default PortfolioViewPage;
-

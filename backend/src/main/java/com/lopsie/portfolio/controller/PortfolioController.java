@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/portfolios")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -28,27 +30,17 @@ public class PortfolioController {
      * It requires the user to be authenticated.
      *
      * @param file The resume file (.pdf or .docx) uploaded by the user.
-     * @param templateId The ID of the template selected by the user.
      * @param userDetails The details of the currently logged-in user, provided by Spring Security.
      * @return A response containing the final, styled HTML of the generated portfolio.
      */
     @PostMapping("/generate")
-    public ResponseEntity<GenerationResponse> generatePortfolioFromFile(
+    public ResponseEntity<Map<String, Object>> generatePortfolioData(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("templateId") String templateId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        // The try-catch block is no longer needed here.
-        // Exceptions will be handled globally by the GlobalExceptionHandler.
-
-        // 1. Find the User entity using the UserService
         User currentUser = userService.findByEmail(userDetails.getUsername());
-
-        // 2. Delegate the complex logic to the generation service
-        String generatedHtml = portfolioGenerationService.generateAndSavePortfolio(file, templateId, currentUser);
-
-        // 3. Return a successful response
-        return ResponseEntity.ok(GenerationResponse.success(generatedHtml));
+        Map<String, Object> portfolioData = portfolioGenerationService.generatePortfolioData(file, currentUser);
+        return ResponseEntity.ok(portfolioData);
     }
 
     /**

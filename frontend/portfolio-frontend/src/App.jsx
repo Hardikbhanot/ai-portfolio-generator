@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import PortfolioViewPage from "./pages/Portfolio";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import PortfolioEditor from "./pages/PortfolioEditor";
 function App() {
   return (
     
@@ -18,10 +19,12 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
              <Route element={<ProtectedRoute />}>
           <Route path="/portfolio" element={<PortfolioViewPage />} />
+          <Route path="/editor" element={<PortfolioEditor />} />
         </Route>
             {/* <Route path="/upload" element={<ResumeUploadPage />} />
             <Route path="/portfolio" element={<PortfolioViewPage />} />
             <Route path="/register" element={<RegisterPage />} /> */}
+            {/* <Route path="/" element={<Navigate to="/login" />} /> */}
           </Routes>
         </main>
       </div> 
