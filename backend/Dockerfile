@@ -1,32 +1,34 @@
-# Use a build stage with a JDK to compile
+# ---- Build Stage ----
 FROM eclipse-temurin:17-jdk-alpine AS build
 
+# Set working directory inside container
 WORKDIR /app
 
-# Copy only what is needed for build to speed up build
-COPY ./backend/gradle ./gradle
-COPY ./backend/gradlew ./gradlew
-COPY ./backend/build.gradle ./backend/settings.gradle ./backend/gradle.* ./
+# Copy Gradle wrapper and config files first (for better caching)
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
 
-# If you have settings.gradle in root/backend, adjust path accordingly
-RUN chmod +x ./gradlew
+# Make Gradle wrapper executable
+RUN chmod +x gradlew
 
-COPY ./backend/src ./src
-# Copy other needed files
-COPY ./backend/src/main/resources ./src/main/resources
+# Copy the rest of the source code
+COPY src src
 
-# Build the project, skipping tests for speed (optional)
+# Build the application without running tests (faster)
 RUN ./gradlew clean build -x test
 
-# Runtime stage
+# ---- Runtime Stage ----
 FROM eclipse-temurin:17-jdk-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy the built jar from build stage
+# Copy the built JAR from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
+# Expose port 8080 (Render will map PORT env var)
 EXPOSE 8080
 
-# Run the app
-ENTRYPOINT ["java","-jar","app.jar"]
+# Start the application
+CMD ["java", "-jar", "app.jar"]
