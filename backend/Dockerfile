@@ -1,5 +1,6 @@
 # ---- Build Stage ----
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:24-jdk-alpine AS build
+
 
 # Set working directory inside container
 WORKDIR /app
@@ -19,7 +20,8 @@ COPY src src
 RUN ./gradlew clean build -x test
 
 # ---- Runtime Stage ----
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:24-jdk-alpine
+
 
 # Set working directory
 WORKDIR /app
