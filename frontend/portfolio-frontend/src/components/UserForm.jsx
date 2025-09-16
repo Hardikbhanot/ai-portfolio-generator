@@ -1,5 +1,6 @@
 import { useState } from "react";
-import axios from "axios"; // Assuming you have a configured axios instance
+// 1. IMPORT the configured apiClient
+import apiClient from "../api/axiosConfig";
 import { UserPlus as UserPlusIcon } from "lucide-react";
 
 // The UserForm now accepts two new props: `setNotification` and `onSuccess`.
@@ -15,8 +16,8 @@ function UserForm({ setNotification, onSuccess }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Use your actual API endpoint for registration
-      await axios.post("http://localhost:8080/api/auth/register", form);
+      // 2. USE the apiClient for the API call. It will use the correct base URL.
+      await apiClient.post("/api/auth/register", form);
       
       // Show success notification via the parent component's state
       setNotification({
@@ -69,3 +70,4 @@ function UserForm({ setNotification, onSuccess }) {
 }
 
 export default UserForm;
+
