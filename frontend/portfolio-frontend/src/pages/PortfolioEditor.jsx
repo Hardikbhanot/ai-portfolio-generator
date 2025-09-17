@@ -8,10 +8,17 @@ function PortfolioEditor() {
     // 1. Read the license key directly. We know this part works from your console logs.
     const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE;
 
-    // 2. Log the key one last time to be certain.
+    // --- NEW DIAGNOSTIC STEP ---
+    // 2. Log the exact domain the browser is currently on.
+    // This is the value you MUST use in your GrapesJS Studio license settings.
+    const currentDomain = window.location.hostname;
+    console.log("DEBUG: The current browser domain is:", `'${currentDomain}'`);
+
+
+    // 3. Log the key one last time to be certain.
     console.log("FINAL TEST: Attempting to render Studio Editor with license:", `'${licenseKey}'`);
 
-    // 3. Create a static, hardcoded configuration object.
+    // 4. Create a static, hardcoded configuration object.
     const editorOptions = {
         project: {
             default: {
@@ -31,7 +38,7 @@ function PortfolioEditor() {
         license: licenseKey || '', // Pass the key, or a fallback empty string.
     };
 
-    // 4. Directly return the component with the static options.
+    // 5. Directly return the component with the static options.
     return (
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
             {/* We render the editor unconditionally to test its core functionality. */}
