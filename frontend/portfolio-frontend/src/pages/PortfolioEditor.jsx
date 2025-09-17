@@ -2,53 +2,42 @@ import React from 'react';
 import StudioEditor from '@grapesjs/studio-sdk/react';
 import '@grapesjs/studio-sdk/style';
 
-// This is a diagnostic version of the PortfolioEditor component.
-// It will display the license key to verify if it's being read from Vercel's environment variables.
+// This is a minimal, definitive test component. It removes all React hooks
+// and dynamic data to isolate the GrapesJS Studio initialization.
 function PortfolioEditor() {
-    // Read the license key directly from the environment variable.
+    // 1. Read the license key directly. We know this part works from your console logs.
     const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE;
-    
-    // Create a static, hardcoded configuration object for the editor.
+
+    // 2. Log the key one last time to be certain.
+    console.log("FINAL TEST: Attempting to render Studio Editor with license:", `'${licenseKey}'`);
+
+    // 3. Create a static, hardcoded configuration object.
     const editorOptions = {
         project: {
             default: {
                 pages: [
                     { 
-                        name: 'Test Portfolio', 
+                        name: 'Test Page', 
                         component: `
-                            <div>
-                                <script src="https://cdn.tailwindcss.com"></script>
-                                <h1 class="text-4xl p-8">Editor Test</h1>
-                                <p class="p-8">If you can see this, the component is rendering.</p>
+                            <div style="padding: 2rem; font-family: sans-serif;">
+                                <h1 style="font-size: 2rem; font-weight: bold;">Editor Initialized</h1>
+                                <p>If you see this, the license key and domain are correct.</p>
                             </div>
                         `
                     }
                 ],
             },
         },
-        license: licenseKey || '', // Pass the key, or an empty string if it's not found
+        license: licenseKey || '', // Pass the key, or a fallback empty string.
     };
 
+    // 4. Directly return the component with the static options.
     return (
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-            {/* --- THIS IS THE DIAGNOSTIC VIEW --- */}
-            {/* We will render the key directly to the screen to confirm it's being passed. */}
-            <div className="p-4 bg-yellow-200 text-black text-center font-mono">
-                <p className="font-bold">Vercel Environment Variable Check:</p>
-                <p>REACT_APP_GRAPESJS_LICENSE = '{licenseKey || "NOT FOUND"}'</p>
-            </div>
-
-            {/* We only attempt to render the editor if the license key is present */}
-            {licenseKey ? (
-                <StudioEditor
-                    options={editorOptions}
-                />
-            ) : (
-                <div className="p-8 text-center text-red-500">
-                    <h2 className="text-2xl font-bold">Editor Disabled</h2>
-                    <p>The GrapesJS license key was not found in the environment variables.</p>
-                </div>
-            )}
+            {/* We render the editor unconditionally to test its core functionality. */}
+            <StudioEditor
+                options={editorOptions}
+            />
         </div>
     );
 }
