@@ -37,7 +37,7 @@ function LoginPage() {
       
       // 3. CORRECTED the redirect path to the protected route
       setTimeout(() => {
-        navigate("/generate"); 
+        navigate("/portfolio"); 
       }, 1500);
 
     } catch (err) {
