@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import StudioEditor from '@grapesjs/studio-sdk/react';
 import '@grapesjs/studio-sdk/style';
 
-// --- Theme definitions with full styles ---
+
 const themes = {
     'modern-dark': {
         styles: `
@@ -92,7 +92,6 @@ function PortfolioEditor() {
         return null; 
     }
 
-    // Pass both the data and the selected templateId to the builder function
     const initialHtml = buildInitialHtml(portfolioData, templateId);
 
     const projectOptions = {
@@ -103,37 +102,33 @@ function PortfolioEditor() {
 
     return (
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
-            <StudioEditor options={{ project: projectOptions }} />
+            <StudioEditor
+                options={{
+                    project: projectOptions,
+                    license: '',
+                }}
+            />
         </div>
     );
 }
 
+// Helper function to build HTML (remains the same)
 const buildInitialHtml = (data, themeId = 'modern-dark') => {
-    // THIS IS THE KEY FIX:
-    // It uses the passed 'themeId' to select the correct theme object.
-    // If the themeId is invalid, it safely falls back to 'modern-dark'.
     const theme = themes[themeId] || themes['modern-dark'];
-
     const skillsArray = Array.isArray(data.skills) 
         ? data.skills 
         : typeof data.skills === 'string' 
             ? data.skills.split(',').map(skill => skill.trim()) 
             : [];
-
     const skillsHtml = skillsArray.length > 0
-        ? skillsArray.map(skill => 
-            `<span class="${theme.skillBadgeClass}">${skill}</span>`
-          ).join('')
+        ? skillsArray.map(skill => `<span class="${theme.skillBadgeClass}">${skill}</span>`).join('')
         : '<p>No skills found.</p>';
-
     const projectsHtml = data.projects?.map(project => `
         <div class="${theme.projectCardClass}">
             <h3 class="${theme.projectTitleClass}">${project.name}</h3>
             <p class="${theme.projectDescClass}">${project.description}</p>
         </div>
     `).join('') || '<p>No projects found.</p>';
-
-    // The rest of the function now uses the dynamically selected 'theme' object
     return `
         <html>
             <head>
