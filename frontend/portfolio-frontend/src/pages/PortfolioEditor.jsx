@@ -89,8 +89,11 @@ function PortfolioEditor() {
         } else {
             const initialHtml = buildInitialHtml(portfolioData, templateId);
             
-           
             const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
+
+            // This is the console.log you requested.
+            // It will show you exactly what value the environment variable has.
+            console.log("DEBUG: GrapesJS License Key being used:", `'${licenseKey}'`);
 
             const options = {
                 project: {
@@ -98,7 +101,6 @@ function PortfolioEditor() {
                         pages: [{ name: 'Portfolio', component: initialHtml }],
                     },
                 },
-                // Use the license key from the environment.
                 license: licenseKey,
             };
 
