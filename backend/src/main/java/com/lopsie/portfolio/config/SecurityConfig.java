@@ -3,7 +3,7 @@ package com.lopsie.portfolio.config;
 import com.lopsie.portfolio.filter.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpMethod; // <-- Make sure this is imported
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -32,21 +32,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Allow the browser's preflight OPTIONS requests to pass through security
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Allow public access to auth endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // Secure all other endpoints
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // THIS IS THE FIX: Allow all CORS preflight OPTIONS requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Your existing rules
+                .requestMatchers("/api/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+    
+    // ... (The rest of your file remains the same)
 
     @Bean
     public static AuthenticationProvider authenticationProvider(
@@ -69,3 +70,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+
