@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StudioEditor from '@grapesjs/studio-sdk/react';
 import '@grapesjs/studio-sdk/style';
 
-
+// --- Theme definitions with full styles (remains the same) ---
 const themes = {
     'modern-dark': {
         styles: `
@@ -81,32 +81,39 @@ function PortfolioEditor() {
     const location = useLocation();
     const navigate = useNavigate();
     const { portfolioData, templateId } = location.state || {};
+    const [editorOptions, setEditorOptions] = useState(null);
 
     useEffect(() => {
         if (!portfolioData) {
             navigate('/generate');
+        } else {
+            const initialHtml = buildInitialHtml(portfolioData, templateId);
+            
+           
+            const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
+
+            const options = {
+                project: {
+                    default: {
+                        pages: [{ name: 'Portfolio', component: initialHtml }],
+                    },
+                },
+                // Use the license key from the environment.
+                license: licenseKey,
+            };
+
+            setEditorOptions(options);
         }
-    }, [portfolioData, navigate]);
+    }, [portfolioData, templateId, navigate]);
 
-    if (!portfolioData) {
-        return null; 
+    if (!editorOptions) {
+        return <div className="flex items-center justify-center h-screen">Loading Editor...</div>;
     }
-
-    const initialHtml = buildInitialHtml(portfolioData, templateId);
-
-    const projectOptions = {
-        default: {
-            pages: [{ name: 'Portfolio', component: initialHtml }],
-        },
-    };
 
     return (
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
             <StudioEditor
-                options={{
-                    project: projectOptions,
-                    license: '',
-                }}
+                options={editorOptions}
             />
         </div>
     );
