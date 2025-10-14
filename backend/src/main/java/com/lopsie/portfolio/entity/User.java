@@ -22,6 +22,9 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
 
     private String password; // This will be the hashed password
 
+    private boolean enabled = false;
+
+
     // --- UserDetails Methods ---
 
     @Override
@@ -53,7 +56,7 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
 
     @Override
     public boolean isEnabled() {
-        return true; // Account is always enabled
+        return this.enabled; // Account is always enabled
     }
 
     // --- Your existing Getters and Setters ---
@@ -66,4 +69,14 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
     @Override
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public boolean getEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+
+    // add field
+
+// modify isEnabled()
+
+
+
 }
