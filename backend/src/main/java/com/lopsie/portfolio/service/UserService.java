@@ -13,11 +13,13 @@ public class UserService implements UserDetailsService { // <-- IMPLEMENT UserDe
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder; // <-- Inject PasswordEncoder
+    private final OtpService otpService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.otpService = otpService;
+}
 
     /**
      * This method is used by Spring Security to load a user for authentication.
@@ -32,15 +34,18 @@ public class UserService implements UserDetailsService { // <-- IMPLEMENT UserDe
      * The new registration method with password hashing and validation.
      */
     public User registerUser(User user) {
-        // Check if user with this email already exists
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalStateException("Email already in use.");
         }
 
-        // Hash the password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setEnabled(false); // important: keep user disabled until OTP verified
+        User saved = userRepository.save(user);
 
-        return userRepository.save(user);
+        // generate + send OTP
+        otpService.generateAndSendOtp(saved.getEmail());
+
+        return saved;
     }
 
     public User findByEmail(String email) {

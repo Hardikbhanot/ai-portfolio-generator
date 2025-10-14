@@ -2,9 +2,11 @@ package com.lopsie.portfolio.controller;
 
 import com.lopsie.portfolio.dto.AuthResponse; // We will create this DTO
 import com.lopsie.portfolio.dto.LoginRequest; // We will create this DTO
+import com.lopsie.portfolio.dto.OtpRequest;
 import com.lopsie.portfolio.dto.RegisterRequest; // We will create this DTO
 import com.lopsie.portfolio.entity.User;
 import com.lopsie.portfolio.service.JwtService; // We will create this service
+import com.lopsie.portfolio.service.OtpService;
 import com.lopsie.portfolio.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,11 +23,13 @@ public class AuthController {
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final OtpService otpService;
 
-    public AuthController(UserService userService, JwtService jwtService, AuthenticationManager authenticationManager) {
+    public AuthController(UserService userService, JwtService jwtService, AuthenticationManager authenticationManager, OtpService otpService) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.otpService = otpService;
     }
 
     /**
@@ -44,7 +48,7 @@ public class AuthController {
             // The service will handle hashing and saving
             userService.registerUser(newUser);
 
-            return ResponseEntity.ok("User registered successfully!");
+            return ResponseEntity.ok("Registration successful. OTP sent to email.");
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -67,6 +71,14 @@ public class AuthController {
 
         // Return the token in the response
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(@RequestBody OtpRequest req) {
+        boolean ok = otpService.verifyOtpAndActivate(req.getEmail(), req.getOtp());
+        if (ok) return ResponseEntity.ok("Account verified successfully.");
+        else return ResponseEntity.badRequest().body("Invalid or expired OTP.");
     }
 
     @GetMapping("/hello")
