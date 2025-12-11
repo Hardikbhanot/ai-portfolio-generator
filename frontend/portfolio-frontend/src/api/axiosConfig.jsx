@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a new Axios instance with a base URL
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',  
+  baseURL: process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://api.portfolio-generator.hbhanot.tech'),
 });
 
 /**
@@ -15,13 +15,13 @@ apiClient.interceptors.request.use(
   (config) => {
     // 1. Get the token from localStorage
     const token = localStorage.getItem('token');
-    
+
     // 2. If the token exists, add it to the Authorization header
     if (token) {
       // The backend (Spring Security) expects the header in this "Bearer <token>" format
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => {

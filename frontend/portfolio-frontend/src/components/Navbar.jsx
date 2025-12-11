@@ -27,27 +27,27 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-white/30 dark:bg-gray-900/50 backdrop-blur-lg shadow-md fixed w-full z-10 top-0 left-0">
+    <nav className="glass-card sticky top-4 left-0 right-0 mx-4 rounded-2xl z-50 mb-8 transition-all duration-300">
       <div className="container mx-auto flex justify-between items-center p-4">
         {/* 4. Corrected the link to point to /generate for logged-in users */}
-        <Link to={isAuthenticated ? "/portfolio" : "/login"} className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-          Lopsie Portfolio
+        <Link to={isAuthenticated ? "/portfolio" : "/login"} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 hover:scale-105 transition-transform">
+          Lopsie
         </Link>
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           {/* This part will now update instantly without a page refresh */}
           {isAuthenticated ? (
             <>
-              <Link to="/portfolio" className="flex items-center gap-2 hover:text-indigo-500 transition-colors">
+              <Link to="/portfolio" className="glass-button px-4 py-2 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400">
                 <FileTextIcon size={18} />
-                Portfolio
+                <span className="hidden sm:inline">Portfolio</span>
               </Link>
-              <button onClick={handleLogout} className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors">
+              <button onClick={handleLogout} className="glass-button px-4 py-2 rounded-lg flex items-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
                 <LogOutIcon size={18} />
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </>
           ) : (
-            <Link to="/login" className="flex items-center gap-2 hover:text-indigo-500 transition-colors">
+            <Link to="/login" className="btn-primary flex items-center gap-2">
               <LogInIcon size={18} />
               Login
             </Link>
@@ -55,9 +55,10 @@ function Navbar() {
 
           <button
             onClick={toggleDark}
-            className="ml-4 px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-transform duration-200 hover:scale-105"
+            className="glass-button p-2 rounded-lg text-gray-700 dark:text-gray-200 hover:rotate-12"
+            aria-label="Toggle Dark Mode"
           >
-            {darkMode ? "Light" : "Dark"}
+            {darkMode ? "☀️" : "🌙"}
           </button>
         </div>
       </div>
