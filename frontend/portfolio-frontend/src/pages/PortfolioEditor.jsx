@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import StudioEditor from '@grapesjs/studio-sdk/react';
 import '@grapesjs/studio-sdk/style';
 import { v4 as uuidv4 } from 'uuid'; // A library to generate unique IDs
+import AiAssistantPanel from '../components/AiAssistantPanel';
+import apiClient from '../api/axiosConfig';
+import { Wand2 } from 'lucide-react';
 
 // --- Theme definitions with full styles ---
 const themes = {
