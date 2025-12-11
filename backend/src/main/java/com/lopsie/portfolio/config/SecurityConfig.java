@@ -41,8 +41,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // login/register open
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -59,9 +58,10 @@ public class SecurityConfig {
 
         // Allow only your frontend origins
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",                // local dev
-                "https://ai-portfolio-generator.vercel.app" // deployed frontend
-        ));
+                "http://localhost:3000", // local dev
+                "https://ai-portfolio-generator.vercel.app", // legacy vercel
+                "https://portfolio-generator.hbhanot.tech", // custom domain
+                "https://www.portfolio-generator.hbhanot.tech"));
 
         // Allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -72,8 +72,7 @@ public class SecurityConfig {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
-                "Origin"
-        ));
+                "Origin"));
 
         // Expose headers so frontend can read them
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
@@ -89,8 +88,7 @@ public class SecurityConfig {
     @Bean
     public static AuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder
-    ) {
+            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder);
