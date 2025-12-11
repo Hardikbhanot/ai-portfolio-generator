@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid'; // A library to generate unique IDs
 import AiAssistantPanel from '../components/AiAssistantPanel';
 import apiClient from '../api/axiosConfig';
 import { Wand2 } from 'lucide-react';
+import { useAuth } from "../context/AuthContext";
 
 // --- Theme definitions with full styles ---
 const themes = {
@@ -81,10 +82,13 @@ const themes = {
     }
 };
 
+import { useAuth } from "../context/AuthContext";
+
 function PortfolioEditor() {
     const location = useLocation();
     const navigate = useNavigate();
     const { portfolioData, templateId } = location.state || {};
+    const { user } = useAuth(); // Get user from context
 
     const [editor, setEditor] = useState(null);
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -92,7 +96,7 @@ function PortfolioEditor() {
 
     // useMemo prevents the option object re-creation
     const editorOptions = useMemo(() => {
-        if (!portfolioData) return null;
+        if (!portfolioData || !user?.id) return null; // Wait for user ID
 
         const initialHtml = buildInitialHtml(portfolioData, templateId);
         const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
@@ -106,10 +110,13 @@ function PortfolioEditor() {
                     pages: [{ name: 'Portfolio', component: initialHtml }],
                 },
             },
+            identity: {
+                id: user.id.toString() // Use actual user ID
+            },
             assets: { storageType: 'cloud' },
             storage: { type: 'cloud' }
         };
-    }, [portfolioData, templateId]);
+    }, [portfolioData, templateId, user]);
 
     useEffect(() => {
         if (!portfolioData) navigate('/generate');
