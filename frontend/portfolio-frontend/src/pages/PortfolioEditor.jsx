@@ -5,7 +5,7 @@ import '@grapesjs/studio-sdk/style';
 import { v4 as uuidv4 } from 'uuid'; // A library to generate unique IDs
 import AiAssistantPanel from '../components/AiAssistantPanel';
 import apiClient from '../api/axiosConfig';
-import { Wand2 } from 'lucide-react';
+import { Wand2, CloudUpload as CloudUploadIcon } from 'lucide-react';
 import { useAuth } from "../context/AuthContext";
 
 // --- Theme definitions with full styles ---
@@ -100,51 +100,72 @@ function PortfolioEditor() {
 
         const initialHtml = buildInitialHtml(portfolioData, templateId);
         const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
-        const portfolioId = portfolioData.portfolioId; // Get ID from backend response
 
         return {
             licenseKey: licenseKey,
             project: {
                 type: 'web',
+                // This 'default' project is used if NO data is loaded.
+                default: {
+                    pages: [{ name: 'Home', component: initialHtml }]
+                }
             },
-            storageManager: {
-                type: 'remote',
-                autosave: true, // Autosave on changes
-                stepsBeforeSave: 3,
-                urlStore: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/store`,
-                urlLoad: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/load`,
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                contentTypeJson: true,
+            // Disable built-in storage to rely on manual load/save
+            // Disable auto-storage to prevent SDK from checking local/remote automatically
+            storage: {
+                type: 'local',
+                autosave: false,
+                autoload: false
             },
             assets: {
-                storageType: 'remote', // Or 'cloud' if you have asset endpoints
-                // For now keep default or disable if no asset upload endpoint
+                storageType: 'remote',
             },
             container: '#gjs',
-            fromElement: true, // Not needed if we pass 'components' in project data
+            fromElement: true,
             height: '100%',
             width: '100%',
-            // We initialize with generated content ONLY if loading fails or on first run?
-            // Actually, if we use urlLoad, GrapesJS tries to load on init.
-            // If that fails (404), we should load the 'initialHtml'.
-            // But GrapesJS API for fallback is tricky.
-            // Simpler: Inject initialHtml into the 'components' property of the project config
-            // BUT only if we don't have saved data?
-            // Since this is a "Generation" flow, maybe we always want to start fresh?
-            // NO, if I accidentally refresh, I want my changes back.
-            // So: urlLoad is good.
-            // BUT: If it's a NEW generation, the DB entity might be empty of GJs data?
-            // The service just created it. It has no GJs data.
-            // So load will return empty.
-            // We need to pass the INITIAL content as default.
-            components: initialHtml, // This might override load?
-            // GrapesJS documentation says: project data (from load) overrides config.
-            // So this is safe.
         };
-    }, [portfolioData, templateId, user, token]);
+    }, [portfolioData, templateId, user]);
 
+    // Manual Load Logic
+    const handleEditorInit = async (editorInstance) => {
+        setEditor(editorInstance);
+
+        if (!portfolioData?.portfolioId) return;
+
+        try {
+            // Attempt to load from remote DB
+            const response = await apiClient.get(`/api/portfolios/${portfolioData.portfolioId}/load`);
+            const savedData = response.data;
+
+            if (savedData && Object.keys(savedData).length > 0) {
+                console.log("Loading saved portfolio...");
+                editorInstance.loadProject(savedData);
+            } else {
+                // If no saved data, load the generated initial content
+                console.log("Loading initial generated portfolio...");
+                const initialHtml = buildInitialHtml(portfolioData, templateId);
+                editorInstance.loadProject({
+                    pages: [{
+                        name: 'Home',
+                        component: initialHtml
+                    }]
+                });
+            }
+        } catch (error) {
+            console.error("Failed to load portfolio:", error);
+            // Fallback to initial content on error
+            const initialHtml = buildInitialHtml(portfolioData, templateId);
+            editorInstance.loadProject({
+                pages: [{
+                    name: 'Home',
+                    component: initialHtml
+                }]
+            });
+        }
+    };
+
+    // Remove the separate useEffect for loading since we do it in onEditor now
     useEffect(() => {
         if (!portfolioData) navigate('/generate');
     }, [portfolioData, navigate]);
@@ -195,6 +216,29 @@ function PortfolioEditor() {
         }
     };
 
+    const handleSave = async () => {
+        if (!editor || !portfolioData?.portfolioId) return;
+        setIsRegenerating(true);
+        try {
+            const projectData = editor.getProjectData();
+            // We also extract HTML/CSS for public view optimization
+            const html = editor.getHtml();
+            const css = editor.getCss();
+
+            await apiClient.post(`/api/portfolios/${portfolioData.portfolioId}/store`, {
+                ...projectData,
+                "gjs-html": html,
+                "gjs-css": css
+            });
+            alert("Portfolio saved successfully!");
+        } catch (error) {
+            console.error("Save failed:", error);
+            alert("Failed to save.");
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
+
     if (!editorOptions) {
         return <div className="flex items-center justify-center h-screen">Loading Editor...</div>;
     }
@@ -203,8 +247,18 @@ function PortfolioEditor() {
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px', position: 'relative' }}>
             <StudioEditor
                 options={editorOptions}
-                onEditor={(editorInstance) => setEditor(editorInstance)}
+                onEditor={handleEditorInit}
             />
+
+            {/* Manual Save Button */}
+            <button
+                onClick={handleSave}
+                className="absolute bottom-24 right-6 z-[9999] bg-green-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
+                title="Save Changes"
+            >
+                <CloudUploadIcon size={24} />
+                <span className="font-bold">Save</span>
+            </button>
 
             {/* AI Toggle Button - FAB Style */}
             <button
