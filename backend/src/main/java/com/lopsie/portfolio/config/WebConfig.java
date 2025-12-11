@@ -14,7 +14,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // Apply this configuration to all routes under /api/
-                .allowedOrigins("http://localhost:3000") // Allow requests from your React frontend
+                .allowedOrigins("http://localhost:3000",
+                "https://portfolio-generator.hbhanot.tech") // Allow requests from your React frontend
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow all standard HTTP methods
                 .allowedHeaders("*") // Allow all headers, which is crucial for the 'Authorization' header
                 .allowCredentials(true); // Allow cookies and credentials to be sent

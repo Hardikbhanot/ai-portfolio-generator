@@ -63,7 +63,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // IMPORTANT: Update this with your Vercel frontend's URL in production
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://ai-portfolio-generator.vercel.app","https://ai-portfolio-generator-cbbwltb1d-hardikbhanots-projects.vercel.app"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://portfolio-generator.hbhanot.tech", "https://ai-portfolio-generator.vercel.app","https://ai-portfolio-generator-cbbwltb1d-hardikbhanots-projects.vercel.app"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
