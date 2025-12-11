@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 // 1. IMPORT the configured apiClient
 import apiClient from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
@@ -96,6 +96,11 @@ function LoginPage() {
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">Password</label>
                     <input name="password" type="password" placeholder="Enter your password" onChange={handleLoginChange} className={inputClasses} required />
+                    <div className="flex justify-end mt-1">
+                      <Link to="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+                        Forgot Password?
+                      </Link>
+                    </div>
                   </div>
                   <div className="pt-4">
                     <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">

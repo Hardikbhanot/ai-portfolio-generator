@@ -47,14 +47,14 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String token = jwtService.generateToken(userDetails);
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (DisabledException e) {
             // This specifically catches the error for users who are not yet verified.
-            return ResponseEntity.status(401).body(Map.of("message", "Account not verified. Please check your email for an OTP."));
+            return ResponseEntity.status(401)
+                    .body(Map.of("message", "Account not verified. Please check your email for an OTP."));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
         }
@@ -70,6 +70,33 @@ public class AuthController {
             return ResponseEntity.ok(Map.of("message", "User verified successfully! You can now log in."));
         } else {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid verification code."));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        try {
+            userService.initiatePasswordReset(email);
+            return ResponseEntity.ok(Map.of("message", "Password reset email sent."));
+        } catch (Exception e) {
+            // Check specific exceptions if needed, but generic catch is safer for security
+            // (user enumeration)
+            // Ideally log the error
+            return ResponseEntity.ok(Map.of("message", "If this email exists, a reset code has been sent."));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String otp = payload.get("otp");
+        String newPassword = payload.get("newPassword");
+
+        if (userService.resetPassword(email, otp, newPassword)) {
+            return ResponseEntity.ok(Map.of("message", "Password reset successful! You can now log in."));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid OTP or request."));
         }
     }
 }

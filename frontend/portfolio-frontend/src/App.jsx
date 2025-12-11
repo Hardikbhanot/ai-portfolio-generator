@@ -7,32 +7,36 @@ import PortfolioViewPage from "./pages/Portfolio";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import PortfolioEditor from "./pages/PortfolioEditor";
+import ForgotPasswordPage from "./pages/ForgotPassword";
+import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyEmailPage from "./pages/VerifyEmail";
+import MeshGradientBackground from "./components/MeshGradientBackground";
+
 function App() {
   return (
 
     <HelmetProvider>
-      <Router>
-        <AuthProvider>
-          <div className="min-h-screen text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
-            {/* Global Animated Background */}
-            <div className="mesh-gradient-bg" />
-
+      <AuthProvider>
+        <Router>
+          <MeshGradientBackground />
+          <div className="relative z-10 min-h-screen flex flex-col">
             <Navbar />
-            <main className="container mx-auto px-4 py-8 relative z-0">
+            <main className="flex-grow container mx-auto px-4 py-8 pt-24 pb-20">
               <Routes>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify" element={<VerifyEmailPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/portfolio" element={<PortfolioViewPage />} />
                   <Route path="/editor" element={<PortfolioEditor />} />
                 </Route>
-                <Route path="/verify" element={<VerifyEmailPage />} />
               </Routes>
             </main>
           </div>
-        </AuthProvider>
-      </Router>
+        </Router>
+      </AuthProvider>
     </HelmetProvider>
 
   );

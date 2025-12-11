@@ -122,4 +122,35 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
+
+    /**
+     * Initiates the password reset process by generating an OTP and sending an
+     * email.
+     */
+    public void initiatePasswordReset(String email) {
+        User user = findByEmail(email); // Will throw exception if not found
+
+        // Generate a 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationCode(otp);
+        userRepository.save(user);
+
+        // Send the reset email
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), otp);
+    }
+
+    /**
+     * Resets the user's password if the provided OTP is valid.
+     */
+    public boolean resetPassword(String email, String otp, String newPassword) {
+        User user = findByEmail(email);
+
+        if (user.getVerificationCode() != null && user.getVerificationCode().equals(otp)) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+            user.setVerificationCode(null); // Clear the OTP after usage
+            userRepository.save(user);
+            return true;
+        }
+        return false;
+    }
 }
