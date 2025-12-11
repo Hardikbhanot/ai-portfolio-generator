@@ -172,13 +172,14 @@ function PortfolioEditor() {
                 onEditor={(editorInstance) => setEditor(editorInstance)}
             />
 
-            {/* AI Toggle Button */}
+            {/* AI Toggle Button - FAB Style */}
             <button
                 onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
-                className="absolute top-4 right-4 z-30 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 transition-colors"
+                className="absolute bottom-6 right-6 z-[9999] bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
                 title="AI Assistant"
             >
                 <Wand2 size={24} />
+                <span className="font-bold">AI Helper</span>
             </button>
 
             <AiAssistantPanel
