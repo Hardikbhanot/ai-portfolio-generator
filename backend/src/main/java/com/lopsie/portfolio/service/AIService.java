@@ -23,15 +23,36 @@ public class AIService {
 
         Map<String, Object> requestBody = Map.of(
                 "model", "meta-llama/llama-4-scout-17b-16e-instruct",
-                "messages", new Object[]{
+                "messages", new Object[] {
                         Map.of("role", "system", "content", "You are a portfolio generator."),
                         Map.of("role", "user", "content",
                                 "Generate a professional portfolio from this resume. " +
                                         "Extract: Bio (2-3 sentences), Skills (comma separated), " +
                                         "Projects (with short descriptions). Resume: " + resumeText)
-                }
-        );
+                });
 
+        return callGroqApi(url, requestBody);
+    }
+
+    public String regenerateSection(String sectionType, String currentContent, String instructions) {
+        String url = "https://api.groq.com/openai/v1/chat/completions";
+
+        String prompt = String.format("Rewrite the following %s. \n\nCurrent Content: %s\n\nInstructions: %s\n\n" +
+                "Return ONLY the rewritten content, no markdown formatting, no explanations.",
+                sectionType, currentContent, instructions);
+
+        Map<String, Object> requestBody = Map.of(
+                "model", "meta-llama/llama-4-scout-17b-16e-instruct",
+                "messages", new Object[] {
+                        Map.of("role", "system", "content",
+                                "You are a helpful portfolio editor. You rewrite content strictly according to instructions."),
+                        Map.of("role", "user", "content", prompt)
+                });
+
+        return callGroqApi(url, requestBody);
+    }
+
+    private String callGroqApi(String url, Map<String, Object> requestBody) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);

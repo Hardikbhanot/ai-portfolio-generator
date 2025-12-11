@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StudioEditor from '@grapesjs/studio-sdk/react';
 import '@grapesjs/studio-sdk/style';
@@ -83,12 +83,13 @@ function PortfolioEditor() {
     const navigate = useNavigate();
     const { portfolioData, templateId } = location.state || {};
 
-    // useMemo prevents the options object from being re-created on every render,
-    // which helps stabilize complex components like the editor.
+    const [editor, setEditor] = useState(null);
+    const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+
+    // useMemo prevents the option object re-creation
     const editorOptions = useMemo(() => {
-        if (!portfolioData) {
-            return null;
-        }
+        if (!portfolioData) return null;
 
         const initialHtml = buildInitialHtml(portfolioData, templateId);
         const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
@@ -99,38 +100,89 @@ function PortfolioEditor() {
                 type: 'web',
                 id: `portfolio-${uuidv4()}`,
                 default: {
-                    pages: [
-                        { name: 'Portfolio', component: initialHtml },
-                    ],
+                    pages: [{ name: 'Portfolio', component: initialHtml }],
                 },
             },
-            identity: {
-                // TODO: Replace this with the actual user's ID from your auth context for multi-user support
-                id: 'UNIQUE_END_USER_ID'
-            },
-            assets: {
-                storageType: 'cloud'
-            },
-            storage: {
-                type: 'cloud',
-            }
+            assets: { storageType: 'cloud' },
+            storage: { type: 'cloud' }
         };
     }, [portfolioData, templateId]);
 
     useEffect(() => {
-        if (!portfolioData) {
-            navigate('/generate');
-        }
+        if (!portfolioData) navigate('/generate');
     }, [portfolioData, navigate]);
+
+    const handleRegenerate = async (elementId, sectionType, instructions) => {
+        if (!editor) return;
+
+        setIsRegenerating(true);
+        try {
+            // 1. Get current content
+            const component = editor.getWrapper().find(`#${elementId}`)[0];
+            if (!component) {
+                alert(`Could not find section: ${elementId}`);
+                setIsRegenerating(false);
+                return;
+            }
+
+            // For complex structures like skills/projects, we might want innerHTML, 
+            // but for Bio it's just text. 
+            // Let's grab the HTML to be safe and versatile.
+            const currentContent = component.get('content') || component.components().map(c => c.toHTML()).join('');
+
+            // 2. Call API
+            const response = await apiClient.post('/api/ai/regenerate', {
+                sectionType,
+                currentContent,
+                instructions
+            });
+
+            const newContent = response.data.newContent;
+
+            // 3. Update Editor
+            // If it's a wrapper (skills/projects), we replace children. 
+            // If it's text (bio), we replace content.
+            if (elementId === 'bio-content') {
+                component.components(newContent);
+            } else {
+                // For lists, the AI usually returns the full HTML string of the list items
+                // We replace the inner components
+                component.components(newContent);
+            }
+
+        } catch (error) {
+            console.error("Regeneration failed", error);
+            alert("Failed to regenerate content. Please try again.");
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
 
     if (!editorOptions) {
         return <div className="flex items-center justify-center h-screen">Loading Editor...</div>;
     }
 
     return (
-        <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
+        <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px', position: 'relative' }}>
             <StudioEditor
                 options={editorOptions}
+                onEditor={(editorInstance) => setEditor(editorInstance)}
+            />
+
+            {/* AI Toggle Button */}
+            <button
+                onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
+                className="absolute top-4 right-4 z-30 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 transition-colors"
+                title="AI Assistant"
+            >
+                <Wand2 size={24} />
+            </button>
+
+            <AiAssistantPanel
+                isOpen={isAiPanelOpen}
+                onClose={() => setIsAiPanelOpen(false)}
+                onRegenerate={handleRegenerate}
+                isRegenerating={isRegenerating}
             />
         </div>
     );
@@ -139,16 +191,16 @@ function PortfolioEditor() {
 const buildInitialHtml = (data, themeId = 'modern-dark') => {
     const theme = themes[themeId] || themes['modern-dark'];
 
-    const skillsArray = Array.isArray(data.skills) 
-        ? data.skills 
-        : typeof data.skills === 'string' 
-            ? data.skills.split(',').map(skill => skill.trim()) 
+    const skillsArray = Array.isArray(data.skills)
+        ? data.skills
+        : typeof data.skills === 'string'
+            ? data.skills.split(',').map(skill => skill.trim())
             : [];
 
     const skillsHtml = skillsArray.length > 0
-        ? skillsArray.map(skill => 
+        ? skillsArray.map(skill =>
             `<span class="${theme.skillBadgeClass}">${skill}</span>`
-          ).join('')
+        ).join('')
         : '<p>No skills found.</p>';
 
     const projectsHtml = data.projects && data.projects.length > 0
@@ -172,15 +224,15 @@ const buildInitialHtml = (data, themeId = 'modern-dark') => {
                 <div class="${theme.containerClass}">
                     <section class="${theme.sectionClass}">
                         <h1 class="${theme.h1Class}">Professional Summary</h1>
-                        <p class="${theme.pClass}">${data.bio || 'No bio found.'}</p>
+                        <p id="bio-content" class="${theme.pClass}">${data.bio || 'No bio found.'}</p>
                     </section>
                     <section class="${theme.sectionClass}">
                         <h2 class="${theme.h2Class}">Skills</h2>
-                        <div class="${theme.skillWrapperClass}">${skillsHtml}</div>
+                        <div id="skills-wrapper" class="${theme.skillWrapperClass}">${skillsHtml}</div>
                     </section>
                     <section>
                         <h2 class="${theme.h2Class}">Key Projects</h2>
-                        <div class="${theme.projectGridClass}">${projectsHtml}</div>
+                        <div id="projects-grid" class="${theme.projectGridClass}">${projectsHtml}</div>
                     </section>
                 </div>
             </body>
