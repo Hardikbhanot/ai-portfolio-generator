@@ -29,8 +29,8 @@ function Navbar() {
   return (
     <nav className="glass-card sticky top-4 left-0 right-0 mx-4 rounded-2xl z-50 mb-8 transition-all duration-300">
       <div className="container mx-auto flex justify-between items-center p-4">
-        {/* 4. Corrected the link to point to /generate for logged-in users */}
-        <Link to={isAuthenticated ? "/portfolio" : "/login"} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 hover:scale-105 transition-transform">
+        {/* Logo always points to Home (Landing Page). Logic there handles 'Get Started' dest. */}
+        <Link to="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 hover:scale-105 transition-transform">
           Lopsie
         </Link>
         <div className="flex items-center space-x-4">

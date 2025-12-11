@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 // 1. IMPORT the configured apiClient
@@ -12,7 +12,13 @@ import { LogIn as LogInIcon } from "lucide-react";
 function LoginPage() {
   const [view, setView] = useState("login");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/portfolio');
+    }
+  }, [isAuthenticated, navigate]);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
