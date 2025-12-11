@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -48,8 +49,12 @@ public class AuthController {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String token = jwtService.generateToken(userDetails);
+            User user = (User) authentication.getPrincipal();
+            Map<String, Object> extraClaims = new HashMap<>();
+            extraClaims.put("userId", user.getId());
+            extraClaims.put("name", user.getName()); // Add name too, why not?
+
+            String token = jwtService.generateToken(extraClaims, user);
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (DisabledException e) {
             // This specifically catches the error for users who are not yet verified.
