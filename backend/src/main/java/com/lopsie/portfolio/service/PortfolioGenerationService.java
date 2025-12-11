@@ -22,11 +22,13 @@ public class PortfolioGenerationService {
     private static final Logger log = LoggerFactory.getLogger(PortfolioGenerationService.class);
 
     private final AIService aiService;
+    private final com.lopsie.portfolio.repository.PortfolioRepository portfolioRepository; // Inject Repo
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // The constructor is simplified for the CSR model.
-    public PortfolioGenerationService(AIService aiService) {
+    public PortfolioGenerationService(AIService aiService,
+            com.lopsie.portfolio.repository.PortfolioRepository portfolioRepository) {
         this.aiService = aiService;
+        this.portfolioRepository = portfolioRepository;
     }
 
     /**
@@ -40,10 +42,34 @@ public class PortfolioGenerationService {
     public Map<String, Object> generatePortfolioData(MultipartFile file, User user) {
         try {
             String resumeText = parseResumeFile(file);
-            return getAIPortfolioData(resumeText);
+            Map<String, Object> data = getAIPortfolioData(resumeText);
+
+            // Save to Database
+            com.lopsie.portfolio.entity.Portfolio portfolio = new com.lopsie.portfolio.entity.Portfolio();
+            portfolio.setUser(user);
+            portfolio.setBio((String) data.getOrDefault("bio", ""));
+            // For lists, we'd need to serialize them back to string if we stick to the
+            // String fields
+            // Or just save the raw JSON which is 'gjsData' later?
+            // For now, let's just create the entity so we have an ID.
+            // Data fields bio/skills/projects are nice for search but GrapesJS overwrites
+            // the look.
+            // Let's populate what we can.
+
+            try {
+                portfolio.setSkills(objectMapper.writeValueAsString(data.get("skills")));
+                portfolio.setProjects(objectMapper.writeValueAsString(data.get("projects")));
+            } catch (Exception ignored) {
+            }
+
+            com.lopsie.portfolio.entity.Portfolio saved = portfolioRepository.save(portfolio);
+
+            // Add ID to response so Frontend knows where to save updates
+            data.put("portfolioId", saved.getId());
+
+            return data;
         } catch (Exception e) {
             log.error("Failed to generate portfolio data for user {}", user.getEmail(), e);
-            // Re-throw to be caught by your GlobalExceptionHandler
             throw new RuntimeException("Failed to generate portfolio data.", e);
         }
     }
@@ -79,7 +105,8 @@ public class PortfolioGenerationService {
         String cleanedJsonResponse = cleanJsonResponse(rawJsonResponse);
 
         try {
-            return objectMapper.readValue(cleanedJsonResponse, new TypeReference<>() {});
+            return objectMapper.readValue(cleanedJsonResponse, new TypeReference<>() {
+            });
         } catch (Exception e) {
             log.error("Failed to parse JSON from AI response: {}", cleanedJsonResponse, e);
             throw new AIParsingException("The AI response was not in a valid format.", e);
@@ -88,15 +115,19 @@ public class PortfolioGenerationService {
 
     private String getPortfolioPrompt(String resumeText) {
         // This updated prompt is more aggressive about the required format.
-        return "Analyze the following resume text. Your task is to extract key information and return it as a single, valid JSON object. " +
+        return "Analyze the following resume text. Your task is to extract key information and return it as a single, valid JSON object. "
+                +
                 "Your response MUST start with `{` and end with `}`. " +
-                "DO NOT include any introductory text, explanations, apologies, or markdown code fences like ```json. " +
+                "DO NOT include any introductory text, explanations, apologies, or markdown code fences like ```json. "
+                +
                 "ONLY the raw JSON object is allowed. " +
                 "For example, a bad response is: 'Here is the JSON you requested: ```json{\"bio\":...}```'. " +
                 "A good response is: '{\"bio\":...}'.\n" +
                 "The JSON object must have this exact structure: " +
-                "{\"bio\": \"[A short, professional bio]\", \"skills\": [\"skill1\", \"skill2\"], \"projects\": [{\"name\": \"Project Name\", \"description\": \"Project description\"}]}.\n" +
-                "If a section is not found, return an empty string for \"bio\" or empty arrays for \"skills\" and \"projects\".\n" +
+                "{\"bio\": \"[A short, professional bio]\", \"skills\": [\"skill1\", \"skill2\"], \"projects\": [{\"name\": \"Project Name\", \"description\": \"Project description\"}]}.\n"
+                +
+                "If a section is not found, return an empty string for \"bio\" or empty arrays for \"skills\" and \"projects\".\n"
+                +
                 "Here is the resume content:\n" +
                 "\"\"\"\n" +
                 resumeText + "\n" +

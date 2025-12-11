@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // login/register open
                         .requestMatchers("/api/analytics/track").permitAll() // Allow public tracking
+                        .requestMatchers("/api/public/**").permitAll() // Public portfolio
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
@@ -57,12 +58,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow only your frontend origins
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000", // local dev
-                "https://ai-portfolio-generator.vercel.app", // legacy vercel
-                "https://portfolio-generator.hbhanot.tech", // custom domain
-                "https://www.portfolio-generator.hbhanot.tech"));
+        // Allow wildcard subdomains using Patterns (required when allowCredentials is
+        // true)
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:3000",
+                "https://ai-portfolio-generator.vercel.app",
+                "https://*.portfolio-generator.hbhanot.tech", // Wildcard support
+                "https://portfolio-generator.hbhanot.tech"));
 
         // Allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

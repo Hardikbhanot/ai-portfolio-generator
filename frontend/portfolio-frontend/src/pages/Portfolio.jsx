@@ -68,6 +68,7 @@ function PortfolioViewPage() {
     // For this MVP, we track visits to the Dashboard to demonstrate the data flow.
     // We need the user's ID. In a real public view, we'd get the portfolio owner's ID from the URL.
     const { user } = useAuth(); // Assuming useAuth provides the user object
+    const [customSubdomain, setCustomSubdomain] = useState('');
 
     useEffect(() => {
         if (user && user.id) {
@@ -78,6 +79,17 @@ function PortfolioViewPage() {
             }).catch(err => console.error("Tracking failed", err));
         }
     }, [user]);
+
+    const handleUpdateSubdomain = async () => {
+        try {
+            const response = await apiClient.put('/api/user/subdomain', { subdomain: customSubdomain });
+            setNotification({ type: 'success', message: 'Domain claimed successfully!' });
+            // In a real app, update the user context here to reflect changes immediately
+        } catch (error) {
+            console.error(error);
+            setNotification({ type: 'error', message: error.response?.data || 'Failed to update domain.' });
+        }
+    };
 
     const handleFileChange = (e) => setFile(e.target.files[0]);
 
@@ -157,7 +169,48 @@ function PortfolioViewPage() {
         <>
             <Notification notification={notification} setNotification={setNotification} />
             <div className="min-h-screen flex items-center justify-center p-8 pt-24 bg-gray-100 dark:bg-gray-900">
-                <div className="w-full max-w-4xl p-8 bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl">
+                <div className="w-full max-w-4xl p-8 bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl space-y-8">
+                    {/* Domain Settings Section */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            Global Domain Settings
+                        </h3>
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="flex-1 w-full">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Claim your unique subdomain
+                                </label>
+                                <div className="flex rounded-md shadow-sm">
+                                    <input
+                                        type="text"
+                                        placeholder="your-name"
+                                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        onChange={(e) => setCustomSubdomain(e.target.value)}
+                                    />
+                                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-300 sm:text-sm">
+                                        .portfolio-generator...
+                                    </span>
+                                </div>
+                            </div>
+                            <PrimaryButton onClick={handleUpdateSubdomain} disabled={!customSubdomain}>
+                                Claim Domain
+                            </PrimaryButton>
+                        </div>
+                        {user?.subdomain && (
+                            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg flex items-center justify-between">
+                                <span>Your portfolio is live at: <strong>{user.subdomain}.portfolio-generator.hbhanot.tech</strong></span>
+                                <a
+                                    href={`https://${user.subdomain}.portfolio-generator.hbhanot.tech`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 underline"
+                                >
+                                    Visit Site
+                                </a>
+                            </div>
+                        )}
+                    </div>
+
                     <AnimatePresence mode="wait">
                         {renderContent()}
                     </AnimatePresence>

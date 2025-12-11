@@ -16,18 +16,22 @@ public class PortfolioController {
 
     private final PortfolioGenerationService portfolioGenerationService;
     private final UserService userService;
+    private final com.lopsie.portfolio.repository.PortfolioRepository portfolioRepository; // Inject Repo
 
-    public PortfolioController(PortfolioGenerationService portfolioGenerationService, UserService userService) {
+    public PortfolioController(PortfolioGenerationService portfolioGenerationService, UserService userService,
+            com.lopsie.portfolio.repository.PortfolioRepository portfolioRepository) {
         this.portfolioGenerationService = portfolioGenerationService;
         this.userService = userService;
+        this.portfolioRepository = portfolioRepository;
     }
 
     /**
      * The main endpoint for generating portfolio data from an uploaded resume.
      * It requires the user to be authenticated.
      *
-     * @param file The resume file (.pdf or .docx) uploaded by the user.
-     * @param userDetails The details of the currently logged-in user, provided by Spring Security.
+     * @param file        The resume file (.pdf or .docx) uploaded by the user.
+     * @param userDetails The details of the currently logged-in user, provided by
+     *                    Spring Security.
      * @return A response containing the structured portfolio data as a JSON object.
      */
     @PostMapping("/generate")
@@ -35,7 +39,8 @@ public class PortfolioController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        // Find the full User entity from the username (email) provided by Spring Security.
+        // Find the full User entity from the username (email) provided by Spring
+        // Security.
         User currentUser = userService.findByEmail(userDetails.getUsername());
 
         // Delegate the complex logic of file parsing and AI interaction to the service.
@@ -45,14 +50,43 @@ public class PortfolioController {
         return ResponseEntity.ok(portfolioData);
     }
 
-    /**
-     * A placeholder endpoint for fetching all saved portfolios for the currently authenticated user.
-     * (Functionality to be implemented in the service layer).
-     */
-    @GetMapping
-    public ResponseEntity<?> getUserPortfolios(@AuthenticationPrincipal UserDetails userDetails) {
-        // TODO: Implement logic in a service to find all portfolios associated with the user.
-        return ResponseEntity.ok("Endpoint to get all portfolios for user: " + userDetails.getUsername());
+    // --- GrapesJS Storage Endpoints ---
+
+    @PostMapping("/{id}/store")
+    public ResponseEntity<?> savePortfolio(@PathVariable Long id, @RequestBody Map<String, Object> data) {
+        return portfolioRepository.findById(id).map(portfolio -> {
+            try {
+                // Store the full JSON for the editor
+                portfolio.setGjsData(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(data));
+
+                // Extract HTML and CSS for public viewing
+                if (data.containsKey("gjs-html")) {
+                    portfolio.setGjsHtml((String) data.get("gjs-html"));
+                }
+                if (data.containsKey("gjs-css")) {
+                    portfolio.setGjsCss((String) data.get("gjs-css"));
+                }
+
+                portfolioRepository.save(portfolio);
+                return ResponseEntity.ok().build();
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body("Failed to save portfolio.");
+            }
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/load")
+    public ResponseEntity<?> loadPortfolio(@PathVariable Long id) {
+        return portfolioRepository.findById(id).map(portfolio -> {
+            try {
+                String json = portfolio.getGjsData();
+                if (json == null || json.isEmpty()) {
+                    return ResponseEntity.ok(Map.of()); // Return empty object if no saved data
+                }
+                return ResponseEntity.ok(new com.fasterxml.jackson.databind.ObjectMapper().readValue(json, Map.class));
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body("Failed to load portfolio.");
+            }
+        }).orElse(ResponseEntity.notFound().build());
     }
 }
-

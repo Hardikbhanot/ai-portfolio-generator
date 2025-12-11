@@ -7,4 +7,6 @@ import java.util.Optional; // <-- Import Optional
 public interface UserRepository extends JpaRepository<User, Long> {
     // Return an Optional<User> to handle 'not found' cases gracefully
     Optional<User> findByEmail(String email);
+
+    Optional<User> findBySubdomain(String subdomain);
 }

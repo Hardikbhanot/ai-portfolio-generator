@@ -88,7 +88,7 @@ function PortfolioEditor() {
     const location = useLocation();
     const navigate = useNavigate();
     const { portfolioData, templateId } = location.state || {};
-    const { user } = useAuth(); // Get user from context
+    const { user, token } = useAuth(); // Get user and token
 
     const [editor, setEditor] = useState(null);
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -96,27 +96,54 @@ function PortfolioEditor() {
 
     // useMemo prevents the option object re-creation
     const editorOptions = useMemo(() => {
-        if (!portfolioData || !user?.id) return null; // Wait for user ID
+        if (!portfolioData || !user?.id) return null;
 
         const initialHtml = buildInitialHtml(portfolioData, templateId);
         const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
+        const portfolioId = portfolioData.portfolioId; // Get ID from backend response
 
         return {
             licenseKey: licenseKey,
             project: {
                 type: 'web',
-                id: `portfolio-${uuidv4()}`,
-                default: {
-                    pages: [{ name: 'Portfolio', component: initialHtml }],
+            },
+            storageManager: {
+                type: 'remote',
+                autosave: true, // Autosave on changes
+                stepsBeforeSave: 3,
+                urlStore: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/store`,
+                urlLoad: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/load`,
+                headers: {
+                    Authorization: `Bearer ${token}`
                 },
+                contentTypeJson: true,
             },
-            identity: {
-                id: user.id.toString() // Use actual user ID
+            assets: {
+                storageType: 'remote', // Or 'cloud' if you have asset endpoints
+                // For now keep default or disable if no asset upload endpoint
             },
-            assets: { storageType: 'cloud' },
-            storage: { type: 'cloud' }
+            container: '#gjs',
+            fromElement: true, // Not needed if we pass 'components' in project data
+            height: '100%',
+            width: '100%',
+            // We initialize with generated content ONLY if loading fails or on first run?
+            // Actually, if we use urlLoad, GrapesJS tries to load on init.
+            // If that fails (404), we should load the 'initialHtml'.
+            // But GrapesJS API for fallback is tricky.
+            // Simpler: Inject initialHtml into the 'components' property of the project config
+            // BUT only if we don't have saved data?
+            // Since this is a "Generation" flow, maybe we always want to start fresh?
+            // NO, if I accidentally refresh, I want my changes back.
+            // So: urlLoad is good.
+            // BUT: If it's a NEW generation, the DB entity might be empty of GJs data?
+            // The service just created it. It has no GJs data.
+            // So load will return empty.
+            // We need to pass the INITIAL content as default.
+            components: initialHtml, // This might override load?
+            // GrapesJS documentation says: project data (from load) overrides config.
+            // So this is safe.
         };
-    }, [portfolioData, templateId, user]);
+    }, [portfolioData, templateId, user, token]);
 
     useEffect(() => {
         if (!portfolioData) navigate('/generate');

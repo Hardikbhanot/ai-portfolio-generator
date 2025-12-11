@@ -23,15 +23,78 @@ public class Portfolio {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // --- GrapesJS Storage ---
+    @Column(columnDefinition = "TEXT")
+    private String gjsData; // The full JSON project data
+
+    @Column(columnDefinition = "TEXT")
+    private String gjsHtml; // Compiled HTML
+
+    @Column(columnDefinition = "TEXT")
+    private String gjsCss; // Compiled CSS
+
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
-    public String getSkills() { return skills; }
-    public void setSkills(String skills) { this.skills = skills; }
-    public String getProjects() { return projects; }
-    public void setProjects(String projects) { this.projects = projects; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public String getProjects() {
+        return projects;
+    }
+
+    public void setProjects(String projects) {
+        this.projects = projects;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getGjsData() {
+        return gjsData;
+    }
+
+    public void setGjsData(String gjsData) {
+        this.gjsData = gjsData;
+    }
+
+    public String getGjsHtml() {
+        return gjsHtml;
+    }
+
+    public void setGjsHtml(String gjsHtml) {
+        this.gjsHtml = gjsHtml;
+    }
+
+    public String getGjsCss() {
+        return gjsCss;
+    }
+
+    public void setGjsCss(String gjsCss) {
+        this.gjsCss = gjsCss;
+    }
 }

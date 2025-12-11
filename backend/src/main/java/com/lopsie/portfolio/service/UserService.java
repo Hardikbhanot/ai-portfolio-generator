@@ -153,4 +153,24 @@ public class UserService implements UserDetailsService {
         }
         return false;
     }
+
+    public User updateSubdomain(String email, String subdomain) {
+        // Basic validation regex for subdomain
+        if (!subdomain.matches("^[a-z0-9-]+$")) {
+            throw new IllegalArgumentException("Subdomain can only contain lowercase letters, numbers, and hyphens.");
+        }
+
+        // Check if subdomain is taken
+        if (userRepository.findBySubdomain(subdomain).isPresent()) {
+            // Check if it belongs to someone else
+            User owner = userRepository.findBySubdomain(subdomain).get();
+            if (!owner.getEmail().equals(email)) {
+                throw new IllegalArgumentException("Subdomain is already taken.");
+            }
+        }
+
+        User user = findByEmail(email);
+        user.setSubdomain(subdomain);
+        return userRepository.save(user);
+    }
 }

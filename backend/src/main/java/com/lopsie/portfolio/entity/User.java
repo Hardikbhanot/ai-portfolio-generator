@@ -24,11 +24,16 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
 
     private String verificationCode; // To store the OTP
     private boolean enabled = false;
+
+    @Column(unique = true)
+    private String subdomain;
+
     // --- UserDetails Methods ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // For now, every user has a simple "USER" role. You can make this more complex later.
+        // For now, every user has a simple "USER" role. You can make this more complex
+        // later.
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
@@ -37,7 +42,6 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
         // Spring Security will use the email as the unique username
         return this.email;
     }
-
 
     @Override
     public boolean isAccountNonExpired() {
@@ -60,16 +64,56 @@ public class User implements UserDetails { // <-- IMPLEMENT UserDetails
     }
 
     // --- Your existing Getters and Setters ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     @Override
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-    public String getVerificationCode() { return verificationCode; }
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public String getSubdomain() {
+        return subdomain;
+    }
+
+    public void setSubdomain(String subdomain) {
+        this.subdomain = subdomain;
+    }
 }
