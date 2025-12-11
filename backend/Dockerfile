@@ -19,6 +19,10 @@ COPY src src
 # Build the application without running tests (faster)
 RUN ./gradlew clean build -x test
 
+# Rename the executable JAR to a fixed name to simplify copying
+# matches any .jar that does not end in -plain.jar
+RUN find build/libs -name "*.jar" ! -name "*plain.jar" -exec cp {} build/libs/app.jar \;
+
 # ---- Runtime Stage ----
 FROM eclipse-temurin:24-jdk-alpine
 
@@ -27,7 +31,7 @@ FROM eclipse-temurin:24-jdk-alpine
 WORKDIR /app
 
 # Copy the built JAR from the build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/app.jar app.jar
 
 # Expose port 8080 (Render will map PORT env var)
 EXPOSE 8080
