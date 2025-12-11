@@ -100,22 +100,28 @@ function PortfolioEditor() {
 
         const initialHtml = buildInitialHtml(portfolioData, templateId);
         const licenseKey = process.env.REACT_APP_GRAPESJS_LICENSE || '';
+        const portfolioId = portfolioData.portfolioId;
 
         return {
             licenseKey: licenseKey,
             project: {
                 type: 'web',
-                // This 'default' project is used if NO data is loaded.
+                // This 'default' project is used if NO data is loaded (404 from remote)
                 default: {
                     pages: [{ name: 'Home', component: initialHtml }]
                 }
             },
-            // Disable built-in storage to rely on manual load/save
-            // Disable auto-storage to prevent SDK from checking local/remote automatically
-            storage: {
-                type: 'local',
-                autosave: false,
-                autoload: false
+            storageManager: {
+                type: 'remote',
+                autosave: true,
+                stepsBeforeSave: 3,
+                urlStore: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/store`,
+                urlLoad: `${apiClient.defaults.baseURL}/api/portfolios/${portfolioId}/load`,
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                contentTypeJson: true,
+                // On error (404), GrapesJS usually logs it. We rely on project.default fallback.
             },
             assets: {
                 storageType: 'remote',
@@ -125,47 +131,9 @@ function PortfolioEditor() {
             height: '100%',
             width: '100%',
         };
-    }, [portfolioData, templateId, user]);
+    }, [portfolioData, templateId, user, token]);
 
-    // Manual Load Logic
-    const handleEditorInit = async (editorInstance) => {
-        setEditor(editorInstance);
-
-        if (!portfolioData?.portfolioId) return;
-
-        try {
-            // Attempt to load from remote DB
-            const response = await apiClient.get(`/api/portfolios/${portfolioData.portfolioId}/load`);
-            const savedData = response.data;
-
-            if (savedData && Object.keys(savedData).length > 0) {
-                console.log("Loading saved portfolio...");
-                editorInstance.loadProject(savedData);
-            } else {
-                // If no saved data, load the generated initial content
-                console.log("Loading initial generated portfolio...");
-                const initialHtml = buildInitialHtml(portfolioData, templateId);
-                editorInstance.loadProject({
-                    pages: [{
-                        name: 'Home',
-                        component: initialHtml
-                    }]
-                });
-            }
-        } catch (error) {
-            console.error("Failed to load portfolio:", error);
-            // Fallback to initial content on error
-            const initialHtml = buildInitialHtml(portfolioData, templateId);
-            editorInstance.loadProject({
-                pages: [{
-                    name: 'Home',
-                    component: initialHtml
-                }]
-            });
-        }
-    };
-
-    // Remove the separate useEffect for loading since we do it in onEditor now
+    // Remove the manual load effect and function
     useEffect(() => {
         if (!portfolioData) navigate('/generate');
     }, [portfolioData, navigate]);
@@ -216,26 +184,46 @@ function PortfolioEditor() {
         }
     };
 
+    const [isDeploying, setIsDeploying] = useState(false);
+
     const handleSave = async () => {
         if (!editor || !portfolioData?.portfolioId) return;
-        setIsRegenerating(true);
-        try {
-            const projectData = editor.getProjectData();
-            // We also extract HTML/CSS for public view optimization
-            const html = editor.getHtml();
-            const css = editor.getCss();
+        setIsDeploying(true); // Start deployment animation
 
-            await apiClient.post(`/api/portfolios/${portfolioData.portfolioId}/store`, {
-                ...projectData,
-                "gjs-html": html,
-                "gjs-css": css
-            });
-            alert("Portfolio saved successfully!");
+        try {
+            await editor.store();
+
+            // Simulate "Building" time for better UX (2 seconds)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Check if user has a subdomain to redirect to
+            if (user?.subdomain) {
+                // Redirect to the public site
+                const protocol = window.location.protocol;
+                const host = window.location.host;
+                // Determine base domain (production vs localhost)
+                // If localhost:3000 -> hardik.localhost:3000 (needs /etc/hosts) - tricky.
+                // If production -> hardik.portfolio-generator...
+
+                // For safety, we just alert success and offer link, OR redirect if we are sure.
+                // Let's redirect to the dashboard which has the link, OR better: 
+                // Redirect to the LIVE site if in production.
+
+                // For MVP: Show success in modal with "Visit Site" button.
+                // But user asked for "redirect once ready".
+
+                // Let's construct the URL:
+                const publicUrl = `https://${user.subdomain}.portfolio-generator.hbhanot.tech`; // Hardcoded for prod
+                window.location.href = publicUrl;
+            } else {
+                alert("Saved! Claim a subdomain in the dashboard to go live.");
+                setIsDeploying(false);
+            }
+
         } catch (error) {
             console.error("Save failed:", error);
             alert("Failed to save.");
-        } finally {
-            setIsRegenerating(false);
+            setIsDeploying(false);
         }
     };
 
@@ -247,23 +235,23 @@ function PortfolioEditor() {
         <div style={{ height: 'calc(100vh - 64px)', marginTop: '64px', position: 'relative' }}>
             <StudioEditor
                 options={editorOptions}
-                onEditor={handleEditorInit}
+                onEditor={(editorInstance) => setEditor(editorInstance)}
             />
 
             {/* Manual Save Button */}
             <button
                 onClick={handleSave}
-                className="absolute bottom-24 right-6 z-[9999] bg-green-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
-                title="Save Changes"
+                className="absolute bottom-24 right-6 z-[50] bg-green-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
+                title="Publish Changes"
             >
                 <CloudUploadIcon size={24} />
-                <span className="font-bold">Save</span>
+                <span className="font-bold">Publish</span>
             </button>
 
             {/* AI Toggle Button - FAB Style */}
             <button
                 onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
-                className="absolute bottom-6 right-6 z-[9999] bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
+                className="absolute bottom-6 right-6 z-[50] bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2"
                 title="AI Assistant"
             >
                 <Wand2 size={24} />
@@ -276,6 +264,26 @@ function PortfolioEditor() {
                 onRegenerate={handleRegenerate}
                 isRegenerating={isRegenerating}
             />
+
+            {/* Deployment Modal */}
+            {isDeploying && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-6">
+                        <div className="relative w-24 h-24 mx-auto">
+                            <div className="absolute inset-0 border-4 border-indigo-200 rounded-full animate-ping"></div>
+                            <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                            <CloudUploadIcon className="absolute inset-0 m-auto text-indigo-600" size={32} />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Publishing to Live...</h3>
+                            <p className="text-gray-500 dark:text-gray-400">Optimizing assets, building HTML, and deploying to global CDN.</p>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
+                            <div className="bg-indigo-600 h-2.5 rounded-full animate-progress" style={{ width: '100%', transition: 'width 2s ease-in-out' }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

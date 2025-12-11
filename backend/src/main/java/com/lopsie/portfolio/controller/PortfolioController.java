@@ -79,13 +79,14 @@ public class PortfolioController {
     public ResponseEntity<?> loadPortfolio(@PathVariable Long id) {
         return portfolioRepository.findById(id).map(portfolio -> {
             try {
-                String json = portfolio.getGjsData();
-                if (json == null || json.isEmpty()) {
-                    return ResponseEntity.ok(Map.of()); // Return empty object if no saved data
+                String data = portfolio.getGjsData();
+                if (data == null || data.isEmpty()) {
+                    // Return 404 to trigger GrapesJS fallback to project.default
+                    return ResponseEntity.notFound().build();
                 }
-                return ResponseEntity.ok(new com.fasterxml.jackson.databind.ObjectMapper().readValue(json, Map.class));
+                return ResponseEntity.ok(new ObjectMapper().readValue(data, Map.class));
             } catch (Exception e) {
-                return ResponseEntity.internalServerError().body("Failed to load portfolio.");
+                return ResponseEntity.internalServerError().build();
             }
         }).orElse(ResponseEntity.notFound().build());
     }
