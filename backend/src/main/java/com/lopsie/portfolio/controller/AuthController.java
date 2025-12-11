@@ -52,7 +52,8 @@ public class AuthController {
             User user = (User) authentication.getPrincipal();
             Map<String, Object> extraClaims = new HashMap<>();
             extraClaims.put("userId", user.getId());
-            extraClaims.put("name", user.getName()); // Add name too, why not?
+            extraClaims.put("name", user.getName());
+            extraClaims.put("subdomain", user.getSubdomain());
 
             String token = jwtService.generateToken(extraClaims, user);
             return ResponseEntity.ok(new AuthResponse(token));

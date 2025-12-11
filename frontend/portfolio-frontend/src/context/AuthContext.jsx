@@ -18,7 +18,8 @@ export const AuthProvider = ({ children }) => {
       setUser({
         email: decoded.sub,
         id: decoded.userId,
-        name: decoded.name
+        name: decoded.name,
+        subdomain: decoded.subdomain
       });
       setIsAuthenticated(true);
     } catch (error) {
