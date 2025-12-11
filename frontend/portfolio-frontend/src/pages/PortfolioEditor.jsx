@@ -82,7 +82,7 @@ const themes = {
     }
 };
 
-import { useAuth } from "../context/AuthContext";
+
 
 function PortfolioEditor() {
     const location = useLocation();
