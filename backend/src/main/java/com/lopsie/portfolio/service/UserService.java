@@ -34,7 +34,8 @@ public class UserService implements UserDetailsService {
 
     /**
      * Handles new user registration. It hashes the password, generates an OTP,
-     * saves the user as 'unverified' (enabled=false), and sends a verification email.
+     * saves the user as 'unverified' (enabled=false), and sends a verification
+     * email.
      */
     public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
@@ -85,27 +86,31 @@ public class UserService implements UserDetailsService {
         // --- DEBUGGING LOG 3: Log the state of the user found in the DB ---
         System.out.println("User found in DB: " + user.getEmail());
         System.out.println("  - Is Enabled? " + user.isEnabled());
+
+        // FIX: If user is already enabled, consider it a success (idempotency)
+        if (user.isEnabled()) {
+            System.out.println("VERIFICATION SUCCESS: User is already enabled.");
+            return true;
+        }
+
         System.out.println("  - Stored OTP: " + user.getVerificationCode());
 
         // --- DEBUGGING LOG 4: Check each condition individually ---
-        boolean isNotEnabled = !user.isEnabled();
         boolean codeExists = user.getVerificationCode() != null;
         boolean codesMatch = codeExists && user.getVerificationCode().equals(code);
 
         System.out.println("Condition Checks:");
-        System.out.println("  - Is account NOT enabled? -> " + isNotEnabled);
         System.out.println("  - Does a verification code exist? -> " + codeExists);
         System.out.println("  - Do the provided and stored codes match? -> " + codesMatch);
 
-        if (isNotEnabled && codeExists && codesMatch) {
+        if (codeExists && codesMatch) {
             System.out.println("VERIFICATION SUCCESS: All conditions met. Enabling user.");
             user.setEnabled(true);
             user.setVerificationCode(null);
             userRepository.save(user);
             return true;
         } else {
-            System.out.println("VERIFICATION FAILED: One or more conditions were not met.");
-            System.out.println("--- End of OTP Verification new---");
+            System.out.println("VERIFICATION FAILED: Invalid OTP.");
             return false;
         }
     }
@@ -118,4 +123,3 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 }
-
