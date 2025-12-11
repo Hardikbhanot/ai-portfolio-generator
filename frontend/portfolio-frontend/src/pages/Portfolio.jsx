@@ -1,6 +1,7 @@
-import React, {useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from '../api/axiosConfig';
+import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Code as CodeIcon, CloudUpload as CloudUploadIcon, ArrowRight as ArrowRightIcon, Loader2, X as XIcon } from "lucide-react";
 import Notification from "../components/Notification";
@@ -8,24 +9,24 @@ import TemplateCard from "../components/TemplateCard";
 
 // --- Template data is now defined directly in this file ---
 const templates = [
-  {
-    id: 'modern-dark',
-    name: 'Modern Dark',
-    description: 'A sleek, professional theme for tech roles.',
-    thumbnail: '/images/template-modern-dark.png',
-  },
-  {
-    id: 'classic-light',
-    name: 'Classic Light',
-    description: 'A clean and elegant design for any profession.',
-    thumbnail: '/images/template-classic-light.png',
-  },
-  {
-    id: 'creative-vibrant',
-    name: 'Creative Vibrant',
-    description: 'A colorful and bold layout for creative artists.',
-    thumbnail: '/images/template-creative-vibrant.png',
-  },
+    {
+        id: 'modern-dark',
+        name: 'Modern Dark',
+        description: 'A sleek, professional theme for tech roles.',
+        thumbnail: '/images/template-modern-dark.png',
+    },
+    {
+        id: 'classic-light',
+        name: 'Classic Light',
+        description: 'A clean and elegant design for any profession.',
+        thumbnail: '/images/template-classic-light.png',
+    },
+    {
+        id: 'creative-vibrant',
+        name: 'Creative Vibrant',
+        description: 'A colorful and bold layout for creative artists.',
+        thumbnail: '/images/template-creative-vibrant.png',
+    },
 ];
 
 // --- Reusable Components ---
@@ -62,6 +63,22 @@ function PortfolioViewPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const navigate = useNavigate();
 
+    // --- Analytics Tracking ---
+    // In a real app, this would track the Public Portfolio View. 
+    // For this MVP, we track visits to the Dashboard to demonstrate the data flow.
+    // We need the user's ID. In a real public view, we'd get the portfolio owner's ID from the URL.
+    const { user } = useAuth(); // Assuming useAuth provides the user object
+
+    useEffect(() => {
+        if (user && user.id) {
+            apiClient.post('/api/analytics/track', {
+                targetUserId: user.id,
+                eventType: 'VIEW',
+                metadata: 'Dashboard Visit'
+            }).catch(err => console.error("Tracking failed", err));
+        }
+    }, [user]);
+
     const handleFileChange = (e) => setFile(e.target.files[0]);
 
     const handleProceedToTemplates = () => {
@@ -81,11 +98,11 @@ function PortfolioViewPage() {
         try {
             const response = await apiClient.post("/api/portfolios/generate", formData);
             // Navigate to the editor, passing BOTH the data and the chosen templateId
-            navigate('/editor', { 
-                state: { 
+            navigate('/editor', {
+                state: {
                     portfolioData: response.data,
-                    templateId: selectedTemplateId 
-                } 
+                    templateId: selectedTemplateId
+                }
             });
         } catch (error) {
             console.error("Error generating portfolio data:", error);
@@ -114,7 +131,7 @@ function PortfolioViewPage() {
                 );
             case 'selectTemplate':
                 return (
-                     <motion.div key="select" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                    <motion.div key="select" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                         <div className="text-center">
                             <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">Step 2: Choose a Theme</h2>
                             <p className="mt-2 text-gray-600 dark:text-gray-400">Select a visual style for your portfolio.</p>
@@ -140,7 +157,7 @@ function PortfolioViewPage() {
         <>
             <Notification notification={notification} setNotification={setNotification} />
             <div className="min-h-screen flex items-center justify-center p-8 pt-24 bg-gray-100 dark:bg-gray-900">
-                 <div className="w-full max-w-4xl p-8 bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl">
+                <div className="w-full max-w-4xl p-8 bg-white/40 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-xl">
                     <AnimatePresence mode="wait">
                         {renderContent()}
                     </AnimatePresence>

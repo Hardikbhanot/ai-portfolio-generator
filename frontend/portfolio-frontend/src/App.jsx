@@ -10,6 +10,7 @@ import PortfolioEditor from "./pages/PortfolioEditor";
 import ForgotPasswordPage from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyEmailPage from "./pages/VerifyEmail";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import MeshGradientBackground from "./components/MeshGradientBackground";
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/verify" element={<VerifyEmailPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/portfolio" element={<PortfolioViewPage />} />
+                  <Route path="/analytics" element={<AnalyticsDashboard />} />
                   <Route path="/editor" element={<PortfolioEditor />} />
                 </Route>
               </Routes>

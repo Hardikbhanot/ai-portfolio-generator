@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext'; // <-- 1. UPDATE ahe import path
-import { LogIn as LogInIcon, FileText as FileTextIcon, LogOut as LogOutIcon } from 'lucide-react';
+import { Moon, Sun, FileText as FileTextIcon, LogOut as LogOutIcon, LogIn as LogInIcon, BarChart3 as BarChart3Icon } from "lucide-react";
 
 function Navbar() {
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
@@ -37,6 +37,10 @@ function Navbar() {
           {/* This part will now update instantly without a page refresh */}
           {isAuthenticated ? (
             <>
+              <Link to="/analytics" className="glass-button px-4 py-2 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400">
+                <BarChart3Icon size={18} />
+                <span className="hidden sm:inline">Analytics</span>
+              </Link>
               <Link to="/portfolio" className="glass-button px-4 py-2 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400">
                 <FileTextIcon size={18} />
                 <span className="hidden sm:inline">Portfolio</span>
