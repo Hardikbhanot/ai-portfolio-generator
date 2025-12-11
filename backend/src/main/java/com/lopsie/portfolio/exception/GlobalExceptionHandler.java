@@ -1,8 +1,8 @@
 package com.lopsie.portfolio.exception;
 
 import com.lopsie.portfolio.dto.GenerationResponse;
-import com.lopsie.portfolio.service.PortfolioGenerationService.AIParsingException;
-import com.lopsie.portfolio.service.PortfolioGenerationService.ResumeParsingException;
+import com.lopsie.portfolio.exception.AIParsingException;
+import com.lopsie.portfolio.exception.ResumeParsingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

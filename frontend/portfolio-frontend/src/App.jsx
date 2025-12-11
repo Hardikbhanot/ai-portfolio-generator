@@ -6,6 +6,7 @@ import PortfolioViewPage from "./pages/Portfolio";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import PortfolioEditor from "./pages/PortfolioEditor";
+import VerifyEmailPage from "./pages/VerifyEmail";
 function App() {
   return (
     
@@ -21,10 +22,7 @@ function App() {
           <Route path="/portfolio" element={<PortfolioViewPage />} />
           <Route path="/editor" element={<PortfolioEditor />} />
         </Route>
-            {/* <Route path="/upload" element={<ResumeUploadPage />} />
-            <Route path="/portfolio" element={<PortfolioViewPage />} />
-            <Route path="/register" element={<RegisterPage />} /> */}
-            {/* <Route path="/" element={<Navigate to="/login" />} /> */}
+            <Route path="/verify" element={<VerifyEmailPage />} />
           </Routes>
         </main>
       </div> 

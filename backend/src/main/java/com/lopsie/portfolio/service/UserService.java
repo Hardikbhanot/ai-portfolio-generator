@@ -2,54 +2,120 @@ package com.lopsie.portfolio.service;
 
 import com.lopsie.portfolio.entity.User;
 import com.lopsie.portfolio.repository.UserRepository;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder; // <-- Import
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Random;
 
 @Service
-public class UserService implements UserDetailsService { // <-- IMPLEMENT UserDetailsService
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // <-- Inject PasswordEncoder
-    private final OtpService otpService;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService) {
-    this.userRepository = userRepository;
-    this.passwordEncoder = passwordEncoder;
-    this.otpService = otpService;
-}
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+    }
 
-    /**
-     * This method is used by Spring Security to load a user for authentication.
-     */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+        User user = findByEmail(email);
+        if (!user.isEnabled()) {
+            throw new DisabledException("User account is not yet verified.");
+        }
+        return user;
     }
 
     /**
-     * The new registration method with password hashing and validation.
+     * Handles new user registration. It hashes the password, generates an OTP,
+     * saves the user as 'unverified' (enabled=false), and sends a verification email.
      */
     public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new IllegalStateException("Email already in use.");
+            throw new IllegalStateException("An account with this email already exists.");
         }
-
+        // Hash the password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setEnabled(false); // important: keep user disabled until OTP verified
-        User saved = userRepository.save(user);
 
-        // generate + send OTP
-        otpService.generateAndSendOtp(saved.getEmail());
+        // Generate a 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationCode(otp);
 
-        return saved;
+        // Explicitly set the user as not enabled before saving.
+        user.setEnabled(false);
+
+        // --- NEW DEBUGGING LOG ---
+        // This will show us the state of the user object right before it's saved.
+        System.out.println("--- Registering New User ---");
+        System.out.println("Saving user: " + user.getEmail());
+        System.out.println("  - Is Enabled? " + user.isEnabled());
+        System.out.println("  - Verification Code: " + user.getVerificationCode());
+
+        User savedUser = userRepository.save(user);
+
+        // Send the verification email
+        emailService.sendVerificationEmail(user.getEmail(), user.getName(), otp);
+
+        return savedUser;
     }
 
+    /**
+     * Verifies a user's account by checking the provided OTP.
+     * This version includes detailed logging to debug the process.
+     */
+    public boolean verifyUser(String email, String code) {
+        // --- DEBUGGING LOG 1: Check if the method is being called ---
+        System.out.println("--- Starting OTP Verification ---");
+        System.out.println("Attempting to verify user with email: " + email + " and code: " + code);
+
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            // --- DEBUGGING LOG 2: Check if the user was found ---
+            System.out.println("VERIFICATION FAILED: User with email " + email + " was not found in the database.");
+            return false;
+        }
+
+        // --- DEBUGGING LOG 3: Log the state of the user found in the DB ---
+        System.out.println("User found in DB: " + user.getEmail());
+        System.out.println("  - Is Enabled? " + user.isEnabled());
+        System.out.println("  - Stored OTP: " + user.getVerificationCode());
+
+        // --- DEBUGGING LOG 4: Check each condition individually ---
+        boolean isNotEnabled = !user.isEnabled();
+        boolean codeExists = user.getVerificationCode() != null;
+        boolean codesMatch = codeExists && user.getVerificationCode().equals(code);
+
+        System.out.println("Condition Checks:");
+        System.out.println("  - Is account NOT enabled? -> " + isNotEnabled);
+        System.out.println("  - Does a verification code exist? -> " + codeExists);
+        System.out.println("  - Do the provided and stored codes match? -> " + codesMatch);
+
+        if (isNotEnabled && codeExists && codesMatch) {
+            System.out.println("VERIFICATION SUCCESS: All conditions met. Enabling user.");
+            user.setEnabled(true);
+            user.setVerificationCode(null);
+            userRepository.save(user);
+            return true;
+        } else {
+            System.out.println("VERIFICATION FAILED: One or more conditions were not met.");
+            System.out.println("--- End of OTP Verification new---");
+            return false;
+        }
+    }
+
+    /**
+     * A helper method to find a user by their email.
+     */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 }
+
