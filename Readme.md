@@ -1,80 +1,128 @@
-# 🤖 AI Portfolio Generator
+# AI Portfolio Generator 🚀
 
-A full-stack web application that allows users to register, upload their resume, and automatically generate a personalized portfolio website using AI. Users can select from various professional templates to customize the look and feel of their final portfolio.
+**Turn your resume into a stunning, deployed personal website in minutes using AI.**
 
+![Project Banner](https://via.placeholder.com/1200x600?text=AI+Portfolio+Generator) 
+*(Replace with actual screenshot)*
 
+## Overview
+This full-stack application allows users to upload their resume (PDF/DOCX), automatically extracts key information using **Llama 3 AI**, and generates a customizable portfolio website. Users can edit their site using a drag-and-drop builder and publish it instantly to a unique **custom subdomain** (e.g., `john.portfolio-generator.tech`).
 
----
 ## ✨ Key Features
 
-- **User Authentication:** Secure user registration and login system using Spring Security and JWT.
-- **Resume Parsing:** Supports `.pdf` and `.docx` resume uploads, extracting key information like bio, skills, and project details.
-- **AI-Powered Content Generation:** Leverages an AI model to intelligently structure and summarize the parsed resume data into a professional portfolio format.
-- **Template Selection:** Users can choose from multiple modern templates to style their generated portfolio.
-- **Dynamic HTML Rendering:** The backend uses Thymeleaf to generate fully styled, server-rendered HTML based on the user's choice.
-- **Secure & Protected Routes:** Frontend routes are protected to ensure only authenticated users can access the portfolio generation features.
+### 🤖 AI-Powered Generation
+- **Resume Parsing**: Extracts Bio, Skills, Experience, and Projects from uploaded files.
+- **Llama 3 Integration**: Uses Groq API for ultra-fast content generation.
+- **Granular Regeneration**: Ask AI to rewrite specific sections (e.g., "Make my bio more professional").
+
+### 🎨 Modern Frontend
+- **Glassmorphism UI**: Beautiful, translucent design using Tailwind CSS and Framer Motion.
+- **Drag & Drop Editor**: Integrated **GrapesJS** editor for pixel-perfect customization.
+- **Mesh Gradients**: Dynamic, animated backgrounds.
+- **Responsive Themes**: Multiple pre-built templates (Modern Dark, Classic Light, Creative).
+
+### 🌐 Custom Subdomains
+- **Wildcard DNS**: Users get their own public URL: `https://[username].yourdomain.com`.
+- **Instant Publishing**: Changes go live immediately upon saving.
+- **Smart Redirects**: Auto-redirects to the live site after publishing.
+
+### 📊 Analytics & Auth
+- **Dashboard**: Track views and engagement on your portfolio.
+- **Secure Auth**: JWT-based authentication with email verification and forgot password flow.
+- **Session Persistence**: User subdomain and state persist across reloads.
 
 ---
+
 ## 🛠️ Tech Stack
 
 ### Backend
-* **Framework:** Spring Boot 3
-* **Language:** Java
-* **Security:** Spring Security (JWT Authentication)
-* **Database:** PostgreSQL
-* **API:** RESTful API
-* **Templating:** Thymeleaf
-* **File Parsing:** Apache PDFBox & POI
+- **Java 17 & Spring Boot 3**: Robust REST API.
+- **Spring Security + JWT**: Stateless authentication.
+- **PostgreSQL**: Relational database for Users, Portfolios, and Analytics.
+- **LangChain4j (Optional)**: Abstraction for AI interactions.
+- **Groq API**: High-speed inference for Llama 3 models.
 
 ### Frontend
-* **Framework:** React
-* **Routing:** React Router
-* **State Management:** React Context API
-* **Styling:** Tailwind CSS
-* **Animations:** Framer Motion
-* **API Client:** Axios
+- **React 18**: Component-based UI.
+- **Tailwind CSS**: Utility-first styling.
+- **Framer Motion**: Animations and transitions.
+- **GrapesJS**: Visual website builder.
+- **Axios**: API integration.
+
+### Infrastructure
+- **Docker**: Containerized deployment.
+- **Vercel**: Frontend hosting (supports Wildcard Domains).
+- **Heroku/DigitalOcean**: Backend hosting.
 
 ---
+
 ## 🚀 Getting Started
 
-To get a local copy up and running, follow these simple steps.
-
 ### Prerequisites
+- Java 17+
+- Node.js 18+
+- Docker & Docker Compose
+- PostgreSQL (or use Docker container)
+- Groq API Key
 
-* Java 17+
-* Node.js and npm
-* PostgreSQL
-* Git
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/ai-portfolio-generator.git
+cd ai-portfolio-generator
+```
 
-### Installation & Setup
-
-1.  **Clone the repository**
-    ```sh
-    git clone https://github.com/Hardikbhanot/ai-portfolio-generator.git
-    cd ai-portfolio-generator
+### 2. Backend Setup
+1.  Navigate to `backend/`.
+2.  Configure `application.properties` (or use Env Vars):
+    ```properties
+    spring.datasource.url=jdbc:postgresql://localhost:5432/portfolio_db
+    spring.datasource.username=postgres
+    spring.datasource.password=password
+    application.security.jwt.secret-key=YOUR_SUPER_SECRET_KEY_HERE
+    groq.api.key=YOUR_GROQ_API_KEY
+    ```
+3.  Run the application:
+    ```bash
+    ./gradlew bootRun
     ```
 
-2.  **Backend Setup**
-    * Navigate to the `backend` directory:
-        ```sh
-        cd backend
-        ```
-    * Open `src/main/resources/application.properties`.
-    * Update the PostgreSQL database URL, username, and password to match your local setup.
-    * Update the `application.security.jwt.secret-key` with a long, secure, Base64-encoded string.
-    * Run the Spring Boot application using your IDE or the command line.
+### 3. Frontend Setup
+1.  Navigate to `frontend/portfolio-frontend/`.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Run development server:
+    ```bash
+    npm start
+    ```
 
-3.  **Frontend Setup**
-    * Navigate to the `frontend` directory:
-        ```sh
-        cd ../frontend
-        ```
-    * Install NPM packages:
-        ```sh
-        npm install
-        ```
-    * Start the development server:
-        ```sh
-        npm start
-        ```
-    * Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+---
+
+## 🌐 DNS & Subdomain Configuration (Crucial)
+
+To enable the **Custom Subdomain** feature (e.g., `user.yourdomain.com`), you must configure **Wildcard DNS**.
+
+### 1. In Your DNS Provider (Namecheap, GoDaddy, etc.)
+Add a **CNAME Record**:
+- **Type**: `CNAME`
+- **Name**: `*.portfolio-generator` (or just `*` if using root domain)
+- **Value**: `cname.vercel-dns.com` (if hosting frontend on Vercel)
+
+### 2. In Vercel Project Settings
+1.  Go to **Settings > Domains**.
+2.  Add `*.yourdomain.com`.
+3.  Ensure your main domain (e.g., `yourdomain.com`) is also added.
+
+*Note: The Backend API should be hosted separate from the wildcard (e.g., `api.yourdomain.com`) to avoid routing conflicts.*
+
+---
+
+## 🤝 Contributing
+1.  Fork the repo.
+2.  Create a feature branch (`git checkout -b feature/amazing-feature`).
+3.  Commit changes.
+4.  Push to branch and open a PR.
+
+## 📄 License
+MIT License.

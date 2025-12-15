@@ -17,7 +17,46 @@ import PublicPortfolioView from "./pages/PublicPortfolioView";
 import LandingPage from "./pages/LandingPage";
 
 function App() {
-  // ... (keep logic)
+  const [subdomain, setSubdomain] = useState(null);
+
+  useEffect(() => {
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    let sub = null;
+
+    if (host.includes('localhost')) {
+      if (parts.length > 1 && parts[0] !== 'www') {
+        sub = parts[0];
+      }
+    } else {
+      // Production: e.g. hardik.portfolio-generator.hbhanot.tech
+      if (parts.length > 2) {
+        // Assuming main domain is portfolio-generator.hbhanot.tech (3 parts)
+        // or generic 2-part domain like google.com
+        // We need to be careful. Let's assume anything that is NOT the main domain
+        // includes a subdomain.
+
+        // Hardcoded check for our known production domain
+        if (host.endsWith('portfolio-generator.hbhanot.tech')) {
+          if (parts.length > 3) { // sub.portfolio-generator.hbhanot.tech
+            sub = parts[0];
+          }
+        } else {
+          // For other domains (e.g. vercel.app), logic might vary.
+          // Simplest generic approach: if length > 2, take first part.
+          if (parts.length > 2 && parts[0] !== 'www') {
+            sub = parts[0];
+          }
+        }
+      }
+    }
+
+    setSubdomain(sub);
+  }, []);
+
+  if (subdomain) {
+    return <PublicPortfolioView subdomain={subdomain} />;
+  }
 
   return (
     <HelmetProvider>
