@@ -67,7 +67,8 @@ function PortfolioViewPage() {
     // In a real app, this would track the Public Portfolio View. 
     // For this MVP, we track visits to the Dashboard to demonstrate the data flow.
     // We need the user's ID. In a real public view, we'd get the portfolio owner's ID from the URL.
-    const { user, updateUser } = useAuth(); // Assuming useAuth provides the user object
+    // We need the user's ID. In a real public view, we'd get the portfolio owner's ID from the URL.
+    const { user, updateUser, login } = useAuth(); // Assuming useAuth provides the user object
     const [customSubdomain, setCustomSubdomain] = useState('');
 
     useEffect(() => {
@@ -84,7 +85,13 @@ function PortfolioViewPage() {
         try {
             const response = await apiClient.put('/api/user/subdomain', { subdomain: customSubdomain });
             setNotification({ type: 'success', message: 'Domain claimed successfully!' });
-            updateUser({ subdomain: customSubdomain }); // Update global user state immediately
+
+            if (response.data.token) {
+                // Update the token in localStorage and state so it persists on refresh
+                login(response.data.token);
+            } else {
+                updateUser({ subdomain: customSubdomain }); // Fallback
+            }
         } catch (error) {
             console.error(error);
             setNotification({ type: 'error', message: error.response?.data || 'Failed to update domain.' });
