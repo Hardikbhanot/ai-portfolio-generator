@@ -2,8 +2,9 @@
 
 **Turn your resume into a stunning, deployed personal website in minutes using AI.**
 
-![Project Banner](https://via.placeholder.com/1200x600?text=AI+Portfolio+Generator) 
-*(Replace with actual screenshot)*
+<img width="2888" height="1640" alt="image" src="https://github.com/user-attachments/assets/b94476ad-02b7-43ed-a107-636801cb1e76" />
+
+
 
 ## Overview
 This full-stack application allows users to upload their resume (PDF/DOCX), automatically extracts key information using **Llama 3 AI**, and generates a customizable portfolio website. Users can edit their site using a drag-and-drop builder and publish it instantly to a unique **custom subdomain** (e.g., `john.portfolio-generator.tech`).
@@ -96,26 +97,6 @@ cd ai-portfolio-generator
     ```bash
     npm start
     ```
-
----
-
-## 🌐 DNS & Subdomain Configuration (Crucial)
-
-To enable the **Custom Subdomain** feature (e.g., `user.yourdomain.com`), you must configure **Wildcard DNS**.
-
-### 1. In Your DNS Provider (Namecheap, GoDaddy, etc.)
-Add a **CNAME Record**:
-- **Type**: `CNAME`
-- **Name**: `*.portfolio-generator` (or just `*` if using root domain)
-- **Value**: `cname.vercel-dns.com` (if hosting frontend on Vercel)
-
-### 2. In Vercel Project Settings
-1.  Go to **Settings > Domains**.
-2.  Add `*.yourdomain.com`.
-3.  Ensure your main domain (e.g., `yourdomain.com`) is also added.
-
-*Note: The Backend API should be hosted separate from the wildcard (e.g., `api.yourdomain.com`) to avoid routing conflicts.*
-
 ---
 
 ## 🤝 Contributing
